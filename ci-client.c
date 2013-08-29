@@ -1,4 +1,4 @@
-#include "client.h"
+#include "ci-client.h"
 #include <gio/gio.h>
 #include <glib/gprintf.h>
 #include <cinet.h>

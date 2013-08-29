@@ -1,17 +1,20 @@
 CC=gcc
-CFLAGS=-Wall `pkg-config --cflags glib-2.0 gio-2.0`
-LIBS=`pkg-config --libs glib-2.0 gio-2.0` -lcinet
+CFLAGS=-Wall `pkg-config --cflags glib-2.0 gio-2.0 gtk+-3.0`
+LIBS=`pkg-config --libs glib-2.0 gio-2.0 gtk+-3.0` -lcinet
+
+ci_SRC := $(wildcard *.c)
+ci_OBJ := $(ci_SRC:.c=.o)
+ci_HEADERS := $(wildcard *.h)
 
 all: ciclient
 
-ciclient: client.o main.o
-	$(CC) -o ciclient $(LIBS) client.o main.o
+ciclient: $(ci_OBJ)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
-client.o: client.h client.c
-	$(CC) $(CFLAGS) -c -o client.o client.c
-
-main.o: main.c
-	$(CC) $(CFLAGS) -c -o main.o main.c
+%.o: %.c $(ci_HEADERS)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f ciclient *.o
+	rm -f ciclient $(ci_OBJ)
+
+.PHONY: all clean

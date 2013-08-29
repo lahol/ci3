@@ -1,18 +1,15 @@
 #include <glib.h>
-#include <glib-unix.h>
 #include <gio/gio.h>
 #include <glib/gprintf.h>
-#include "client.h"
+#include "ci-client.h"
+#include "ci-icon.h"
+#include "ci-menu.h"
 #include <signal.h>
 #include <memory.h>
 
-GMainLoop *main_loop = NULL;
-
-gboolean sig_handler(gpointer userdata)
+void handle_quit(void)
 {
-    g_print("sig_handler\n");
     client_stop();
-    return TRUE;
 }
 
 void msg_callback(CINetMsg *msg)
@@ -27,7 +24,7 @@ void msg_callback(CINetMsg *msg)
     }
     else if (msg->msgtype == CI_NET_MSG_LEAVE) {
         g_printf("received leaving reply\n");
-        g_main_loop_quit(main_loop);
+        gtk_main_quit();
     }
     else if (msg->msgtype == CI_NET_MSG_EVENT_RING) {
         g_printf("msg ring\n");
@@ -59,13 +56,19 @@ void msg_callback(CINetMsg *msg)
 
 int main(int argc, char **argv)
 {
-    main_loop = g_main_loop_new(NULL, TRUE);
+    gtk_init(&argc, &argv);
     client_start("localhost", 63690, msg_callback);
 
-    g_unix_signal_add(SIGINT, (GSourceFunc)sig_handler, NULL);
-    g_main_loop_run(main_loop);
+    if (!ci_icon_create(ci_menu_popup_menu, NULL))
+        g_printf("failed to create icon\n");
+
+    CIMenuItemCallbacks menu_cb = { handle_quit };
+    ci_menu_init(&menu_cb);
+
+    gtk_main();
 
     client_shutdown();
+    ci_menu_cleanup();
 
     return 0;
 }
