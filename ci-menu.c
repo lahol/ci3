@@ -2,7 +2,8 @@
 #include <memory.h>
 
 enum CIMenuItemType {
-    CIMenuItemTypeQuit = 0
+    CIMenuItemTypeQuit = 0,
+    CIMenuItemTypeShow = 1
 };
 
 struct CIMenuItem {
@@ -48,9 +49,16 @@ GtkWidget *ci_menu_popup_menu(gpointer userdata)
 {
     ci_menu_reset();
     GtkWidget *popup = gtk_menu_new();
-    GtkWidget *item  = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL);
-    struct CIMenuItem *menu_item = ci_menu_item_new(CIMenuItemTypeQuit, NULL);
+    GtkWidget *item;
+    struct CIMenuItem *menu_item;
 
+    item = gtk_menu_item_new_with_label("Show");
+    menu_item = ci_menu_item_new(CIMenuItemTypeShow, NULL);
+    g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(ci_menu_handle), (gpointer)menu_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(popup), item);
+
+    item = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, NULL);
+    menu_item = ci_menu_item_new(CIMenuItemTypeQuit, NULL);
     g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(ci_menu_handle), (gpointer)menu_item);
     gtk_menu_shell_append(GTK_MENU_SHELL(popup), item);
 
@@ -67,6 +75,9 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
             if (ci_menu_callbacks.handle_quit)
                 ci_menu_callbacks.handle_quit();
             break;
+        case CIMenuItemTypeShow:
+            if (ci_menu_callbacks.handle_show)
+                ci_menu_callbacks.handle_show();
         default:
             break;
     }

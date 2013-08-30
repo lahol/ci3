@@ -5,6 +5,7 @@
 
 typedef struct {
     void (*handle_quit)(void);
+    void (*handle_show)(void);
 } CIMenuItemCallbacks;
 
 void ci_menu_init(CIMenuItemCallbacks *callbacks);
