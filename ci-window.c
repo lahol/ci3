@@ -228,7 +228,7 @@ void ci_window_destroy(void)
 {
 }
 
-void ci_window_select_font_dialog(gpointer userdata)
+gboolean ci_window_select_font_dialog(gpointer userdata)
 {
     GtkWidget *dialog = gtk_font_chooser_dialog_new("Select Font", GTK_WINDOW(window));
 
@@ -238,8 +238,44 @@ void ci_window_select_font_dialog(gpointer userdata)
         gchar *fontname = gtk_font_chooser_get_font(GTK_FONT_CHOOSER(dialog));
         ci_display_element_set_font((CIDisplayElement*)userdata, fontname);
         g_free(fontname);
-        ci_window_update();
     }
 
     gtk_widget_destroy(dialog);
+
+    return (result == GTK_RESPONSE_OK);
+}
+
+gboolean ci_window_edit_element_dialog(gpointer userdata)
+{
+    GtkWidget *dialog = gtk_dialog_new_with_buttons("Edit Element",
+            GTK_WINDOW(window),
+            GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+            GTK_STOCK_APPLY,
+            GTK_RESPONSE_APPLY,
+            GTK_STOCK_CANCEL,
+            GTK_RESPONSE_CANCEL,
+            NULL);
+
+    GtkWidget *entry, *content_area;
+    const gchar *format = ci_display_element_get_format((CIDisplayElement*)userdata);
+    GtkEntryBuffer *buffer = gtk_entry_buffer_new(format, -1);
+
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    entry = gtk_entry_new_with_buffer(buffer);
+
+    gtk_widget_show(entry);
+
+    gtk_container_add(GTK_CONTAINER(content_area), entry);
+
+    GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_APPLY) {
+        ci_display_element_set_format((CIDisplayElement*)userdata,
+                gtk_entry_buffer_get_text(buffer));
+    }
+
+    g_object_unref(G_OBJECT(buffer));
+    gtk_widget_destroy(dialog);
+
+    return (result == GTK_RESPONSE_APPLY);
 }

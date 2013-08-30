@@ -114,6 +114,21 @@ void msg_callback(CINetMsg *msg)
     }
 }
 
+void handle_edit_element(gpointer userdata)
+{
+    if (ci_window_edit_element_dialog(userdata)) {
+        ci_display_element_set_content(userdata, (CIDisplayElementFormatCallback)ci_format_entry, NULL);
+        ci_window_update();
+    }
+}
+
+void handle_select_font(gpointer userdata)
+{
+    if (ci_window_select_font_dialog(userdata)) {
+        ci_window_update();
+    }
+}
+
 void init_display(void)
 {
     CIDisplayElement *el;
@@ -148,7 +163,8 @@ int main(int argc, char **argv)
     CIMenuItemCallbacks menu_cb = {
         handle_quit,
         handle_show,
-        ci_window_select_font_dialog
+        handle_select_font,
+        handle_edit_element
     };
     ci_menu_init(&menu_cb);
     ci_window_init(100, 100, 400, 200);

@@ -4,7 +4,8 @@
 enum CIMenuItemType {
     CIMenuItemTypeQuit = 0,
     CIMenuItemTypeShow,
-    CIMenuItemTypeEditFont
+    CIMenuItemTypeEditFont,
+    CIMenuItemTypeEditFormat
 };
 
 struct CIMenuItem {
@@ -74,6 +75,11 @@ GtkWidget *ci_menu_context_menu(gpointer userdata)
     struct CIMenuItem *menu_item;
 
     if (userdata) {
+        item = gtk_menu_item_new_with_label("Edit Format");
+        menu_item = ci_menu_item_new(CIMenuItemTypeEditFormat, userdata);
+        g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(ci_menu_handle), (gpointer)menu_item);
+        gtk_menu_shell_append(GTK_MENU_SHELL(popup), item);
+
         item = gtk_menu_item_new_with_label("Edit Font");
         menu_item = ci_menu_item_new(CIMenuItemTypeEditFont, userdata);
         g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(ci_menu_handle), (gpointer)menu_item);
@@ -105,6 +111,10 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
         case CIMenuItemTypeEditFont:
             if (ci_menu_callbacks.handle_edit_font)
                 ci_menu_callbacks.handle_edit_font(menu_item->data);
+            break;
+        case CIMenuItemTypeEditFormat:
+            if (ci_menu_callbacks.handle_edit_element)
+                ci_menu_callbacks.handle_edit_element(menu_item->data);
             break;
         default:
             break;
