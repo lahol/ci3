@@ -1,5 +1,7 @@
 #include "ci-window.h"
+#include "ci-menu.h"
 #include "ci-display-elements.h"
+#include <glib/gprintf.h>
 
 GtkWidget *window = NULL;
 GtkWidget *darea;
@@ -8,6 +10,12 @@ gint win_x = 0;
 gint win_y = 0;
 gint win_w = 0;
 gint win_h = 0;
+
+struct {
+    gint start_x;
+    gint start_y;
+    GList *dragged_elements;
+} drag_state;
 
 gboolean ci_window_event_draw(GtkWidget *widget,
         cairo_t *cr, gpointer userdata)
@@ -33,6 +41,124 @@ gboolean ci_window_event_delete_event(GtkWidget *widget, GdkEvent *event, gpoint
     return TRUE;
 }
 
+gboolean ci_window_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer userdata)
+{
+    win_x = event->x;
+    win_y = event->y;
+    win_x = event->width;
+    win_y = event->height;
+
+    return FALSE;
+}
+
+gboolean ci_window_button_press_event(GtkWidget *widget, GdkEventButton *event, gpointer userdata)
+{
+    CIDisplayElement *el = ci_display_element_get_from_pos(event->x, event->y);
+
+    GtkWidget *ctx_menu = NULL;
+
+    if (event->button == 3) {
+        if (event->state & GDK_SHIFT_MASK)
+            ctx_menu = ci_menu_context_menu((gpointer)el);
+        else 
+            ctx_menu = ci_menu_context_menu(NULL);
+
+
+        gtk_widget_show_all(ctx_menu);
+        gtk_menu_popup(GTK_MENU(ctx_menu), NULL, NULL, NULL, NULL, event->button, event->time);
+    }
+    if (event->button == 1 && event->state & GDK_SHIFT_MASK) {
+        if (el) {
+            g_print("begin drag\n");
+            drag_state.dragged_elements = g_list_prepend(drag_state.dragged_elements, (gpointer)el);
+            drag_state.start_x = event->x;
+            drag_state.start_y = event->y;
+
+            ci_display_element_drag_begin(el);
+        }
+    }
+
+    return TRUE;
+}
+
+gboolean ci_window_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer userdata)
+{
+    GList *tmp;
+    if ((event->state & GDK_BUTTON1_MASK) && (event->state & GDK_SHIFT_MASK)) {
+        gdouble dx = (gdouble)(event->x - drag_state.start_x);
+        gdouble dy = (gdouble)(event->y - drag_state.start_y);
+        tmp = drag_state.dragged_elements;
+        while (tmp) {
+            ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy);
+            tmp = g_list_next(tmp);
+        }
+        ci_window_update();
+    }
+    return TRUE;
+}
+
+gboolean ci_window_button_release_event(GtkWidget *widget, GdkEventButton *event, gpointer userdata)
+{
+    GList *tmp;
+    if (event->button == 1 && (event->state & GDK_SHIFT_MASK)) {
+        g_print("end drag\n");
+        gdouble dx = (gdouble)(event->x - drag_state.start_x);
+        gdouble dy = (gdouble)(event->y - drag_state.start_y);
+        tmp = drag_state.dragged_elements;
+        while (tmp) {
+            ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy);
+            ci_display_element_drag_finish((CIDisplayElement*)tmp->data);
+            tmp = g_list_next(tmp);
+        }
+        g_list_free(drag_state.dragged_elements);
+        drag_state.dragged_elements = NULL;
+        ci_window_update();
+    }
+    return TRUE;
+}
+
+gboolean ci_window_key_press_event(GtkWidget *widget, GdkEventKey *event, gpointer userdata)
+{
+    switch (event->keyval) {
+        case GDK_KEY_Escape:
+            ci_window_hide();
+            break;
+        default:
+            break;
+    }
+    return TRUE;
+}
+
+gboolean ci_window_key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer userdata)
+{
+    switch (event->keyval) {
+        case GDK_KEY_Shift_L:
+        case GDK_KEY_Shift_R:
+        case GDK_KEY_Caps_Lock:
+            if ((event->state & GDK_BUTTON1_MASK) && (event->state & GDK_SHIFT_MASK)) {
+                /* cancel drag */
+                g_print("cancel drag\n");
+                GList *tmp = drag_state.dragged_elements;
+                while (tmp) {
+                    ci_display_element_drag_update((CIDisplayElement*)tmp->data, 0.0, 0.0);
+                    ci_display_element_drag_finish((CIDisplayElement*)tmp->data);
+                    tmp = g_list_next(tmp);
+                }
+                g_list_free(drag_state.dragged_elements);
+                drag_state.dragged_elements = NULL;
+
+                ci_window_update();
+            }
+            break;
+    }
+    return TRUE;
+}
+
+gboolean ci_window_scroll_event(GtkWidget *widget, GdkEventScroll *event, gpointer userdata)
+{
+    return TRUE;
+}
+
 gboolean ci_window_init(gint x, gint y, gint w, gint h)
 {
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -51,6 +177,7 @@ gboolean ci_window_init(gint x, gint y, gint w, gint h)
     gtk_widget_add_events(GTK_WIDGET(darea),
             GDK_BUTTON_PRESS_MASK |
             GDK_BUTTON_RELEASE_MASK |
+            GDK_POINTER_MOTION_MASK |
             GDK_KEY_PRESS_MASK |
             GDK_KEY_RELEASE_MASK |
             GDK_SCROLL_MASK);
@@ -59,7 +186,15 @@ gboolean ci_window_init(gint x, gint y, gint w, gint h)
     gtk_widget_show(darea);
 
     g_signal_connect(G_OBJECT(darea), "draw", G_CALLBACK(ci_window_event_draw), NULL);
+    g_signal_connect(G_OBJECT(darea), "button-press-event", G_CALLBACK(ci_window_button_press_event), NULL);
+    g_signal_connect(G_OBJECT(darea), "motion-notify-event", G_CALLBACK(ci_window_motion_notify_event), NULL);
+    g_signal_connect(G_OBJECT(darea), "button-release-event", G_CALLBACK(ci_window_button_release_event), NULL);
+    g_signal_connect(G_OBJECT(darea), "scroll-event", G_CALLBACK(ci_window_scroll_event), NULL);
+
     g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(ci_window_event_delete_event), NULL);
+    g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(ci_window_configure_event), NULL);
+    g_signal_connect(G_OBJECT(window), "key-press-event", G_CALLBACK(ci_window_key_press_event), NULL);
+    g_signal_connect(G_OBJECT(window), "key-release-event", G_CALLBACK(ci_window_key_release_event), NULL);
      /* g_signal_connect(G_OBJECT(darea), "button-press-event", "scroll-event", "destroy" */
     gtk_window_set_role(GTK_WINDOW(window), "MainWindow");
 
@@ -85,11 +220,26 @@ void ci_window_update(void)
 void ci_window_hide(void)
 {
     if (window) {
-        gtk_window_get_position(GTK_WINDOW(window), &win_x, &win_y);
         gtk_widget_hide(window);
     }
 }
 
 void ci_window_destroy(void)
 {
+}
+
+void ci_window_select_font_dialog(gpointer userdata)
+{
+    GtkWidget *dialog = gtk_font_chooser_dialog_new("Select Font", GTK_WINDOW(window));
+
+    GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_OK) {
+        gchar *fontname = gtk_font_chooser_get_font(GTK_FONT_CHOOSER(dialog));
+        ci_display_element_set_font((CIDisplayElement*)userdata, fontname);
+        g_free(fontname);
+        ci_window_update();
+    }
+
+    gtk_widget_destroy(dialog);
 }

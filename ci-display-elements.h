@@ -14,8 +14,15 @@ CIDisplayElement *ci_display_element_get_from_pos(gdouble x, gdouble y);
 
 void ci_display_element_clear_list(void);
 
+void ci_display_element_drag_begin(CIDisplayElement *element);
+void ci_display_element_drag_update(CIDisplayElement *element, gdouble dx, gdouble dy);
+void ci_display_element_drag_finish(CIDisplayElement *element);
+
 void ci_display_element_set_pos(CIDisplayElement *element, gdouble x, gdouble y);
 void ci_display_element_get_pos(CIDisplayElement *element, gdouble *x, gdouble *y);
+
+void ci_display_element_set_font(CIDisplayElement *element, const gchar *font);
+gchar *ci_display_element_get_font(CIDisplayElement *element);
 
 void ci_display_element_set_maxwidth(CIDisplayElement *element, gdouble maxwidth);
 

@@ -9,13 +9,21 @@ struct _CIDisplayElement {
     gdouble width;
     gdouble height;
     gdouble maxwidth;
-    gchar *fontface;
+    gchar *font;
     guint32 fontcolor;
     guint32 fontweigtht;
     guint32 fontflags; /* italic, underline, strikeout */
     gchar *format;
     gchar *content;
     gchar *action;
+    guint32 flags;
+    gdouble dx;
+    gdouble dy;
+};
+
+enum CIDisplayElementFlag {
+    CIDisplayElementFlagSelected = (1<<0),
+    CIDisplayElementFlagDragged = (2<<0)
 };
 
 GList *ci_display_element_list = NULL;
@@ -37,7 +45,7 @@ void ci_display_element_free(CIDisplayElement *element)
         g_free(element->format);
         g_free(element->content);
         g_free(element->action);
-        g_free(element->fontface);
+        g_free(element->font);
         g_free(element);
     }
 }
@@ -51,6 +59,34 @@ void ci_display_element_remove(CIDisplayElement *element)
 GList *ci_display_element_get_elements(void)
 {
     return ci_display_element_list;
+}
+
+void ci_display_element_drag_begin(CIDisplayElement *element)
+{
+    if (element == NULL)
+        return;
+    element->flags |= CIDisplayElementFlagDragged;
+}
+
+void ci_display_element_drag_update(CIDisplayElement *element, gdouble dx, gdouble dy)
+{
+    if (element == NULL || !(element->flags & CIDisplayElementFlagDragged))
+        return;
+    element->dx = dx;
+    element->dy = dy;
+}
+
+void ci_display_element_drag_finish(CIDisplayElement *element)
+{
+    if (element == NULL || !(element->flags & CIDisplayElementFlagDragged))
+        return;
+    element->x += element->dx;
+    element->y += element->dy;
+
+    element->dx = 0.0;
+    element->dy = 0.0;
+
+    element->flags &= ~CIDisplayElementFlagDragged;
 }
 
 CIDisplayElement *ci_display_element_get_from_pos(gdouble x, gdouble y)
@@ -88,6 +124,21 @@ void ci_display_element_get_pos(CIDisplayElement *element, gdouble *x, gdouble *
         if (x) *x = element->x;
         if (y) *y = element->y;
     }
+}
+
+void ci_display_element_set_font(CIDisplayElement *element, const gchar *font)
+{
+    if (element) {
+        g_free(element->font);
+        element->font = g_strdup(font);
+    }
+}
+
+gchar *ci_display_element_get_font(CIDisplayElement *element)
+{
+    if (element)
+        return element->font;
+    return NULL;
 }
 
 void ci_display_element_set_maxwidth(CIDisplayElement *element, gdouble maxwidth)
@@ -245,9 +296,19 @@ void ci_display_element_render(CIDisplayElement *element, cairo_t *cr)
         return;
     }
     PangoLayout *layout;
+    PangoFontDescription *fdesc;
     int w, h;
 
     layout = pango_cairo_create_layout(cr);
+
+    if (element->font)
+        fdesc = pango_font_description_from_string(element->font);
+    else
+        fdesc = pango_font_description_from_string("Sans Bold 10");
+
+    pango_layout_set_font_description(layout, fdesc);
+    pango_font_description_free(fdesc);
+
     pango_layout_set_text(layout, element->content, -1);
     pango_layout_get_size(layout, &w, &h);
 
@@ -255,7 +316,8 @@ void ci_display_element_render(CIDisplayElement *element, cairo_t *cr)
     element->height = ((gdouble)h)/PANGO_SCALE;
 
     cairo_identity_matrix(cr);
-    cairo_translate(cr, element->x, element->y);
+    cairo_translate(cr, element->x + element->dx,
+                        element->y + element->dy);
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 
     pango_cairo_update_layout(cr, layout);
