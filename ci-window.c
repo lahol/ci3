@@ -171,6 +171,7 @@ gboolean ci_window_init(gint x, gint y, gint w, gint h)
         return FALSE;
 
     gtk_window_set_focus_on_map(GTK_WINDOW(window), FALSE);
+    gtk_window_set_default_size(GTK_WINDOW(window), w, h);
 
     win_x = x;
     win_y = y;

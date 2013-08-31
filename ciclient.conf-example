@@ -1,0 +1,18 @@
+{
+    "client" : {
+        "host" : "localhost",
+        "port" : 63690
+    },
+    "window" : {
+        "x" : 100,
+        "y" : 100,
+        "width" : 600,
+        "height" : 300,
+        "background" : "#ff0000"
+    },
+    "elements" : [
+       { "x" : 10, "y" : 10, "format" : "%p %n %P" },
+       { "x" : 10, "y" : 30, "format" : "%N an %M (%A)" },
+       { "x" : 10, "y" : 50, "format" : "%D %T" }
+    ]
+}

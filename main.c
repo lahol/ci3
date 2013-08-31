@@ -8,6 +8,7 @@
 #include "ci-display-elements.h"
 #include "ci-data.h"
 #include "ci-properties.h"
+#include "ci-config.h"
 #include <memory.h>
 
 void handle_quit(void)
@@ -144,12 +145,13 @@ void handle_edit_color(gpointer userdata)
             ci_display_element_set_color((CIDisplayElement*)userdata, &color);
         else
             ci_window_set_background_color(&color);
+        ci_window_update();
     }
 }
 
 void init_display(void)
 {
-    CIDisplayElement *el;
+/*    CIDisplayElement *el;
 
     el = ci_display_element_new();
     ci_display_element_set_pos(el, 10, 10);
@@ -166,6 +168,17 @@ void init_display(void)
     el = ci_display_element_new();
     ci_display_element_set_pos(el, 10, 70);
     ci_display_element_set_format(el, "test\nnewline");
+*/
+    gint x, y, w, h;
+    GdkRGBA col;
+    ci_config_get("window:x", &x);
+    ci_config_get("window:y", &y);
+    ci_config_get("window:width", &w);
+    ci_config_get("window:height", &h);
+    ci_config_get("window:background", &col);
+
+    ci_window_init(x, y, w, h);
+    ci_window_set_background_color(&col);
 
     ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_entry, NULL);
 }
@@ -173,7 +186,22 @@ void init_display(void)
 int main(int argc, char **argv)
 {
     gtk_init(&argc, &argv);
-    client_start("localhost", 63690, msg_callback);
+
+    if (!ci_config_load()) {
+        g_printf("Failed to load configuration. Using defaults.\n");
+    }
+
+    gchar *host = NULL;
+    guint port = 0;
+
+    g_printf("host before: %p\n", host);
+
+    ci_config_get("client:host", (gpointer)&host);
+    ci_config_get("client:port", (gpointer)&port);
+
+    g_printf("host after: %p (%s)\n", host, host);
+
+    client_start(host, port, msg_callback);
 
     if (!ci_icon_create(ci_menu_popup_menu, NULL))
         g_printf("failed to create icon\n");
@@ -187,7 +215,6 @@ int main(int argc, char **argv)
         handle_edit_color
     };
     ci_menu_init(ci_property_get, &menu_cb);
-    ci_window_init(100, 100, 400, 200);
 
     init_display();
 
