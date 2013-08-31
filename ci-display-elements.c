@@ -10,9 +10,7 @@ struct _CIDisplayElement {
     gdouble height;
     gdouble maxwidth;
     gchar *font;
-    guint32 fontcolor;
-    guint32 fontweigtht;
-    guint32 fontflags; /* italic, underline, strikeout */
+    GdkRGBA color;
     gchar *format;
     gchar *content;
     gchar *action;
@@ -33,6 +31,7 @@ gchar *ci_display_element_concat_str_list(GList *str_list);
 CIDisplayElement *ci_display_element_new(void)
 {
     CIDisplayElement *element = g_malloc0(sizeof(struct _CIDisplayElement));
+    element->color.alpha = 1.0f;
 
     ci_display_element_list = g_list_prepend(ci_display_element_list, (gpointer)element);
 
@@ -184,6 +183,18 @@ const gchar *ci_display_element_get_format(CIDisplayElement *element)
     return NULL;
 }
 
+void ci_display_element_set_color(CIDisplayElement *element, GdkRGBA *color)
+{
+    if (element && color)
+        memcpy(&element->color, color, sizeof(GdkRGBA));
+}
+
+void ci_display_element_get_color(CIDisplayElement *element, GdkRGBA *color)
+{
+    if (element && color)
+        memcpy(color, &element->color, sizeof(GdkRGBA));
+}
+
 gchar *ci_display_element_concat_str_list(GList *str_list)
 {
     GList *tmp;
@@ -318,7 +329,7 @@ void ci_display_element_render(CIDisplayElement *element, cairo_t *cr)
     cairo_identity_matrix(cr);
     cairo_translate(cr, element->x + element->dx,
                         element->y + element->dy);
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    gdk_cairo_set_source_rgba(cr, &element->color);
 
     pango_cairo_update_layout(cr, layout);
     pango_cairo_show_layout(cr, layout);

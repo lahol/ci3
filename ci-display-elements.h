@@ -32,6 +32,9 @@ const gchar *ci_display_element_get_action(CIDisplayElement *element);
 void ci_display_element_set_format(CIDisplayElement *element, const gchar *format);
 const gchar *ci_display_element_get_format(CIDisplayElement *element);
 
+void ci_display_element_set_color(CIDisplayElement *element, GdkRGBA *color);
+void ci_display_element_get_color(CIDisplayElement *element, GdkRGBA *color);
+
 /* conversion_symbol, userdata */
 typedef gchar *(*CIDisplayElementFormatCallback)(gchar, gpointer);
 

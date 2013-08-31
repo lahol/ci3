@@ -2,6 +2,7 @@
 #include "ci-menu.h"
 #include "ci-display-elements.h"
 #include <glib/gprintf.h>
+#include <memory.h>
 
 GtkWidget *window = NULL;
 GtkWidget *darea;
@@ -10,6 +11,10 @@ gint win_x = 0;
 gint win_y = 0;
 gint win_w = 0;
 gint win_h = 0;
+
+CIWindowMode window_mode = CIWindowModeNormal;
+
+GdkRGBA background_color = { 1.0, 1.0, 1.0, 1.0 };
 
 struct {
     gint start_x;
@@ -26,7 +31,7 @@ gboolean ci_window_event_draw(GtkWidget *widget,
     height = gtk_widget_get_allocated_height(widget);
 
     cairo_rectangle(cr, 0, 0, width, height);
-    cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+    gdk_cairo_set_source_rgba(cr, &background_color);
 
     cairo_fill(cr);
 
@@ -58,7 +63,7 @@ gboolean ci_window_button_press_event(GtkWidget *widget, GdkEventButton *event, 
     GtkWidget *ctx_menu = NULL;
 
     if (event->button == 3) {
-        if (event->state & GDK_SHIFT_MASK)
+        if (/*event->state & GDK_SHIFT_MASK*/window_mode == CIWindowModeEdit)
             ctx_menu = ci_menu_context_menu((gpointer)el);
         else 
             ctx_menu = ci_menu_context_menu(NULL);
@@ -67,7 +72,7 @@ gboolean ci_window_button_press_event(GtkWidget *widget, GdkEventButton *event, 
         gtk_widget_show_all(ctx_menu);
         gtk_menu_popup(GTK_MENU(ctx_menu), NULL, NULL, NULL, NULL, event->button, event->time);
     }
-    if (event->button == 1 && event->state & GDK_SHIFT_MASK) {
+    if (event->button == 1 && window_mode == CIWindowModeEdit/*event->state & GDK_SHIFT_MASK*/) {
         if (el) {
             g_print("begin drag\n");
             drag_state.dragged_elements = g_list_prepend(drag_state.dragged_elements, (gpointer)el);
@@ -84,7 +89,7 @@ gboolean ci_window_button_press_event(GtkWidget *widget, GdkEventButton *event, 
 gboolean ci_window_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer userdata)
 {
     GList *tmp;
-    if ((event->state & GDK_BUTTON1_MASK) && (event->state & GDK_SHIFT_MASK)) {
+    if ((event->state & GDK_BUTTON1_MASK) && window_mode == CIWindowModeEdit/*(event->state & GDK_SHIFT_MASK)*/) {
         gdouble dx = (gdouble)(event->x - drag_state.start_x);
         gdouble dy = (gdouble)(event->y - drag_state.start_y);
         tmp = drag_state.dragged_elements;
@@ -100,7 +105,7 @@ gboolean ci_window_motion_notify_event(GtkWidget *widget, GdkEventMotion *event,
 gboolean ci_window_button_release_event(GtkWidget *widget, GdkEventButton *event, gpointer userdata)
 {
     GList *tmp;
-    if (event->button == 1 && (event->state & GDK_SHIFT_MASK)) {
+    if (event->button == 1 && window_mode == CIWindowModeEdit/*(event->state & GDK_SHIFT_MASK)*/) {
         g_print("end drag\n");
         gdouble dx = (gdouble)(event->x - drag_state.start_x);
         gdouble dy = (gdouble)(event->y - drag_state.start_y);
@@ -131,12 +136,12 @@ gboolean ci_window_key_press_event(GtkWidget *widget, GdkEventKey *event, gpoint
 
 gboolean ci_window_key_release_event(GtkWidget *widget, GdkEventKey *event, gpointer userdata)
 {
-    switch (event->keyval) {
+/*    switch (event->keyval) {
         case GDK_KEY_Shift_L:
         case GDK_KEY_Shift_R:
         case GDK_KEY_Caps_Lock:
-            if ((event->state & GDK_BUTTON1_MASK) && (event->state & GDK_SHIFT_MASK)) {
-                /* cancel drag */
+            if ((event->state & GDK_BUTTON1_MASK) && (event->state & GDK_SHIFT_MASK)) {*/
+                /* cancel drag *//*
                 g_print("cancel drag\n");
                 GList *tmp = drag_state.dragged_elements;
                 while (tmp) {
@@ -150,7 +155,7 @@ gboolean ci_window_key_release_event(GtkWidget *widget, GdkEventKey *event, gpoi
                 ci_window_update();
             }
             break;
-    }
+    }*/
     return TRUE;
 }
 
@@ -228,6 +233,22 @@ void ci_window_destroy(void)
 {
 }
 
+void ci_window_set_mode(CIWindowMode mode)
+{
+    window_mode = mode;
+}
+
+CIWindowMode ci_window_get_mode(void)
+{
+    return window_mode;
+}
+
+void ci_window_set_background_color(GdkRGBA *color)
+{
+    if (color)
+        memcpy(&background_color, color, sizeof(GdkRGBA));
+}
+
 gboolean ci_window_select_font_dialog(gpointer userdata)
 {
     GtkWidget *dialog = gtk_font_chooser_dialog_new("Select Font", GTK_WINDOW(window));
@@ -279,3 +300,21 @@ gboolean ci_window_edit_element_dialog(gpointer userdata)
 
     return (result == GTK_RESPONSE_APPLY);
 }
+
+gboolean ci_window_choose_color_dialog(GdkRGBA *color)
+{
+    GtkWidget *dialog = gtk_color_chooser_dialog_new("Select Color", GTK_WINDOW(window));
+
+    GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    if (result == GTK_RESPONSE_OK) {
+        if (color) {
+            gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(dialog), color);
+        }
+    }
+
+    gtk_widget_destroy(dialog);
+
+    return (result == GTK_RESPONSE_OK);
+}
+

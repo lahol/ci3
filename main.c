@@ -7,6 +7,7 @@
 #include "ci-window.h"
 #include "ci-display-elements.h"
 #include "ci-data.h"
+#include "ci-properties.h"
 #include <memory.h>
 
 void handle_quit(void)
@@ -129,6 +130,23 @@ void handle_select_font(gpointer userdata)
     }
 }
 
+void handle_edit_mode(gpointer userdata)
+{
+    g_printf("handle editmode: %p\n", userdata);
+    ci_window_set_mode((gboolean)(gulong)userdata ? CIWindowModeNormal : CIWindowModeEdit);
+}
+
+void handle_edit_color(gpointer userdata)
+{
+    GdkRGBA color;
+    if (ci_window_choose_color_dialog(&color)) {
+        if (userdata)
+            ci_display_element_set_color((CIDisplayElement*)userdata, &color);
+        else
+            ci_window_set_background_color(&color);
+    }
+}
+
 void init_display(void)
 {
     CIDisplayElement *el;
@@ -164,9 +182,11 @@ int main(int argc, char **argv)
         handle_quit,
         handle_show,
         handle_select_font,
-        handle_edit_element
+        handle_edit_element,
+        handle_edit_mode,
+        handle_edit_color
     };
-    ci_menu_init(&menu_cb);
+    ci_menu_init(ci_property_get, &menu_cb);
     ci_window_init(100, 100, 400, 200);
 
     init_display();
