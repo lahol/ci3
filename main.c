@@ -13,7 +13,7 @@
 
 void handle_quit(void)
 {
-    client_stop();
+    gtk_main_quit();
 }
 
 void handle_show(void)
@@ -73,46 +73,17 @@ gchar *ci_format_entry_ring(gchar conversion_symbol, CINetMsgEventRing *data)
 
 void msg_callback(CINetMsg *msg)
 {
-    g_printf("received msg\n");
     if (msg->msgtype == CI_NET_MSG_VERSION) {
-        g_printf("version:\n maj: %d\n min: %d\n pat: %d\n hum: %s\n",
+        g_printf("server version: %d.%d.%d (%s)\n", 
                 ((CINetMsgVersion*)msg)->major,
                 ((CINetMsgVersion*)msg)->minor,
                 ((CINetMsgVersion*)msg)->patch,
                 ((CINetMsgVersion*)msg)->human_readable);
     }
-    else if (msg->msgtype == CI_NET_MSG_LEAVE) {
-        g_printf("received leaving reply\n");
-        gtk_main_quit();
-    }
     else if (msg->msgtype == CI_NET_MSG_EVENT_RING) {
-        g_printf("msg ring\n");
-        g_printf("stage: %d\n", ((CINetMsgMultipart*)msg)->stage);
-        g_printf("part:  %d\n", ((CINetMsgMultipart*)msg)->part);
-        g_printf("completenumber: %s\n", ((CINetMsgEventRing*)msg)->fields & CIF_COMPLETENUMBER ?
-                ((CINetMsgEventRing*)msg)->completenumber : "(not set)");
-        g_printf("areacode: %s\n", ((CINetMsgEventRing*)msg)->fields & CIF_AREACODE ?
-                ((CINetMsgEventRing*)msg)->areacode : "(not set)");
-        g_printf("number: %s\n", ((CINetMsgEventRing*)msg)->fields & CIF_NUMBER ?
-                ((CINetMsgEventRing*)msg)->number : "(not set)");
-        g_printf("date: %s\n", ((CINetMsgEventRing*)msg)->fields & CIF_DATE ?
-                ((CINetMsgEventRing*)msg)->date : "(not set)");
-        g_printf("time: %s\n", ((CINetMsgEventRing*)msg)->fields & CIF_TIME ?
-                ((CINetMsgEventRing*)msg)->time : "(not set)");
-        g_printf("msn: %s\n", ((CINetMsgEventRing*)msg)->fields & CIF_MSN ?
-                ((CINetMsgEventRing*)msg)->msn : "(not set)");
-        g_printf("alias: %s\n", ((CINetMsgEventRing*)msg)->fields & CIF_ALIAS ?
-                ((CINetMsgEventRing*)msg)->alias : "(not set)");
-        g_printf("area: %s\n", ((CINetMsgEventRing*)msg)->fields & CIF_AREA ?
-                ((CINetMsgEventRing*)msg)->area : "(not set)");
-        g_printf("name: %s\n", ((CINetMsgEventRing*)msg)->fields & CIF_NAME ?
-                ((CINetMsgEventRing*)msg)->name : "(not set)");
         ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_entry_ring, (gpointer)msg);
         ci_window_update();
         ci_window_show(((CINetMsgMultipart*)msg)->stage == MultipartStageInit ? TRUE : FALSE, FALSE);
-    }
-    else if (msg->msgtype == CI_NET_MSG_SHUTDOWN) {
-        g_printf("received shutdown message\n");
     }
 }
 
@@ -133,7 +104,6 @@ void handle_select_font(gpointer userdata)
 
 void handle_edit_mode(gpointer userdata)
 {
-    g_printf("handle editmode: %p\n", userdata);
     ci_window_set_mode((gboolean)(gulong)userdata ? CIWindowModeNormal : CIWindowModeEdit);
 }
 
@@ -149,38 +119,15 @@ void handle_edit_color(gpointer userdata)
     }
 }
 
+void handle_save_config(void)
+{
+    ci_config_save();
+}
+
 void init_display(void)
 {
-/*    CIDisplayElement *el;
-
-    el = ci_display_element_new();
-    ci_display_element_set_pos(el, 10, 10);
-    ci_display_element_set_format(el, "%p %n %P");
-
-    el = ci_display_element_new();
-    ci_display_element_set_pos(el, 10, 30);
-    ci_display_element_set_format(el, "%N an %M (%A)");
-
-    el = ci_display_element_new();
-    ci_display_element_set_pos(el, 10, 50);
-    ci_display_element_set_format(el, "%D %T");
-
-    el = ci_display_element_new();
-    ci_display_element_set_pos(el, 10, 70);
-    ci_display_element_set_format(el, "test\nnewline");
-*/
-    gint x, y, w, h;
-    GdkRGBA col;
-    ci_config_get("window:x", &x);
-    ci_config_get("window:y", &y);
-    ci_config_get("window:width", &w);
-    ci_config_get("window:height", &h);
-    ci_config_get("window:background", &col);
-
-    ci_window_init(x, y, w, h);
-    ci_window_set_background_color(&col);
-
     ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_entry, NULL);
+    ci_window_init();
 }
 
 int main(int argc, char **argv)
@@ -191,17 +138,7 @@ int main(int argc, char **argv)
         g_printf("Failed to load configuration. Using defaults.\n");
     }
 
-    gchar *host = NULL;
-    guint port = 0;
-
-    g_printf("host before: %p\n", host);
-
-    ci_config_get("client:host", (gpointer)&host);
-    ci_config_get("client:port", (gpointer)&port);
-
-    g_printf("host after: %p (%s)\n", host, host);
-
-    client_start(host, port, msg_callback);
+    client_start(msg_callback);
 
     if (!ci_icon_create(ci_menu_popup_menu, NULL))
         g_printf("failed to create icon\n");
@@ -212,7 +149,8 @@ int main(int argc, char **argv)
         handle_select_font,
         handle_edit_element,
         handle_edit_mode,
-        handle_edit_color
+        handle_edit_color,
+        handle_save_config
     };
     ci_menu_init(ci_property_get, &menu_cb);
 
@@ -220,6 +158,7 @@ int main(int argc, char **argv)
 
     gtk_main();
 
+    client_stop(); /* wait for reply */
     client_shutdown();
     ci_menu_cleanup();
     ci_display_element_clear_list();

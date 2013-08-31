@@ -7,7 +7,8 @@ enum CIMenuItemType {
     CIMenuItemTypeEditFont,
     CIMenuItemTypeEditFormat,
     CIMenuItemTypeEditMode,
-    CIMenuItemTypeEditColor
+    CIMenuItemTypeEditColor,
+    CIMenuItemTypeSaveConfig
 };
 
 struct CIMenuItem {
@@ -116,6 +117,9 @@ GtkWidget *ci_menu_context_menu(gpointer userdata)
         }
         ci_menu_append_separator(popup);
         ci_menu_append_menu_item(popup, "Edit Background Color", CIMenuItemTypeEditColor, NULL);
+
+        ci_menu_append_separator(popup);
+        ci_menu_append_menu_item(popup, "Save Config", CIMenuItemTypeSaveConfig, NULL);
     }
 
     ci_menu_append_separator(popup);
@@ -153,6 +157,11 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
         case CIMenuItemTypeEditColor:
             if (ci_menu_callbacks.handle_edit_color)
                 ci_menu_callbacks.handle_edit_color(menu_item->data);
+            break;
+        case CIMenuItemTypeSaveConfig:
+            if (ci_menu_callbacks.handle_save_config)
+                ci_menu_callbacks.handle_save_config();
+            break;
         default:
             break;
     }

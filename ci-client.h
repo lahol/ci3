@@ -6,7 +6,7 @@
 
 typedef void (*CIMsgCallback)(CINetMsg *);
 
-void client_start(gchar *host, guint port, CIMsgCallback callback);
+void client_start(CIMsgCallback callback);
 void client_stop(void);
 void client_shutdown(void);
 

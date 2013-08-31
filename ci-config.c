@@ -60,6 +60,12 @@ gboolean ci_config_load_window(JsonNode *node);
 gboolean ci_config_load_element_array(JsonNode *node);
 gboolean ci_config_load_element(JsonNode *node);
 
+JsonNode *ci_config_save_root(void);
+void ci_config_save_client(JsonBuilder *builder);
+void ci_config_save_window(JsonBuilder *builder);
+void ci_config_save_element_array(JsonBuilder *builder);
+void ci_config_save_element(JsonBuilder *builder, CIDisplayElement *element);
+
 gboolean ci_config_load(void)
 {
     gboolean result = TRUE;
@@ -68,7 +74,7 @@ gboolean ci_config_load(void)
     JsonNode *root;
     GError *err = NULL;
     if (!json_parser_load_from_file(parser, filename, &err)) {
-        g_print("load from file failed: %s\n", err->message);
+        g_printf("load from file failed: %s\n", err->message);
         g_error_free(err);
         result = FALSE;
     }
@@ -87,42 +93,54 @@ gboolean ci_config_load(void)
 
 gboolean ci_config_save(void)
 {
-    return TRUE;
+    gboolean result = TRUE;
+    GError *err = NULL;
+    gchar *filename = ci_config_get_config_file();
+    JsonGenerator *gen = json_generator_new();
+    JsonNode *root = ci_config_save_root();
+    json_generator_set_root(gen, root);
+
+    json_generator_set_pretty(gen, TRUE);
+    json_generator_set_indent_char(gen, ' ');
+    json_generator_set_indent(gen, 4);
+
+    if (!json_generator_to_file(gen, filename, &err)) {
+        g_printf("save to file failed: %s\n", err->message);
+        g_error_free(err);
+        result = FALSE;
+    }
+
+    json_node_free(root);
+    g_object_unref(gen);
+    g_free(filename);
+
+    return result;
 }
 
 gboolean ci_config_get(const gchar *key, gpointer value)
 {
-    g_printf("ci_config_get: %s\n", key);
     if (g_strcmp0(key, "client:host") == 0) {
-        g_printf("host: %s\n", ci_config.host);
         *((gchar**)value) = g_strdup(ci_config.host);
     }
     else if (g_strcmp0(key, "client:port") == 0) {
-        g_print("get port\n");
         *((guint*)value) = ci_config.port;
     }
     else if (g_strcmp0(key, "window:background") == 0) {
-        g_print("get bknd\n");
         memcpy(value, &ci_config.background, sizeof(GdkRGBA));
     }
     else if (g_strcmp0(key, "window:x") == 0) {
-        g_print("get x\n");
         *((gint*)value) = ci_config.win_x;
     }
     else if (g_strcmp0(key, "window:y") == 0) {
-        g_print("get y\n");
         *((gint*)value) = ci_config.win_y;
     }
     else if (g_strcmp0(key, "window:width") == 0) {
-        g_print("get w\n");
         *((gint*)value) = ci_config.win_w;
     }
     else if (g_strcmp0(key, "window:height") == 0) {
-        g_print("get h\n");
         *((gint*)value) = ci_config.win_h;
     }
     else {
-        g_print("nothing found\n");
         return FALSE;
     }
     return TRUE;
@@ -265,4 +283,113 @@ gboolean ci_config_load_element(JsonNode *node)
     }
 
     return TRUE;
+}
+
+JsonNode *ci_config_save_root(void)
+{
+    JsonBuilder *builder = json_builder_new();
+    JsonNode *root = NULL;
+
+    json_builder_begin_object(builder);
+
+    json_builder_set_member_name(builder, "client");
+    ci_config_save_client(builder);
+
+    json_builder_set_member_name(builder, "window");
+    ci_config_save_window(builder);
+
+    json_builder_set_member_name(builder, "elements");
+    ci_config_save_element_array(builder);
+
+    json_builder_end_object(builder);
+
+    root = json_builder_get_root(builder);
+
+    g_object_unref(builder);
+
+    return root;
+}
+
+void ci_config_save_client(JsonBuilder *builder)
+{
+    json_builder_begin_object(builder);
+
+    json_builder_set_member_name(builder, "host");
+    json_builder_add_string_value(builder, ci_config.host);
+
+    json_builder_set_member_name(builder, "port");
+    json_builder_add_int_value(builder, ci_config.port);
+
+    json_builder_end_object(builder);
+}
+
+void ci_config_save_window(JsonBuilder *builder)
+{
+    json_builder_begin_object(builder);
+
+    json_builder_set_member_name(builder, "x");
+    json_builder_add_int_value(builder, ci_config.win_x);
+
+    json_builder_set_member_name(builder, "y");
+    json_builder_add_int_value(builder, ci_config.win_y);
+
+    json_builder_set_member_name(builder, "width");
+    json_builder_add_int_value(builder, ci_config.win_w);
+
+    json_builder_set_member_name(builder, "height");
+    json_builder_add_int_value(builder, ci_config.win_h);
+
+    gchar *strcol = ci_color_to_string(&ci_config.background);
+    json_builder_set_member_name(builder, "background");
+    json_builder_add_string_value(builder, strcol);
+    g_free(strcol);
+
+    json_builder_end_object(builder);
+}
+
+void ci_config_save_element_array(JsonBuilder *builder)
+{
+    json_builder_begin_array(builder);
+
+    GList *elements = ci_display_element_get_elements();
+    GList *tmp;
+
+    for (tmp = g_list_reverse(elements); tmp != NULL; tmp = g_list_next(tmp)) {
+        ci_config_save_element(builder, (CIDisplayElement*)tmp->data);
+    }
+
+    json_builder_end_array(builder);
+}
+
+void ci_config_save_element(JsonBuilder *builder, CIDisplayElement *element)
+{
+    gdouble x, y;
+    GdkRGBA col;
+    json_builder_begin_object(builder);
+
+    ci_display_element_get_pos(element, &x, &y);
+
+    json_builder_set_member_name(builder, "x");
+    json_builder_add_double_value(builder, x);
+
+    json_builder_set_member_name(builder, "y");
+    json_builder_add_double_value(builder, y);
+
+    /* font, color, format, action */
+    json_builder_set_member_name(builder, "font");
+    json_builder_add_string_value(builder, ci_display_element_get_font(element));
+
+    json_builder_set_member_name(builder, "format");
+    json_builder_add_string_value(builder, ci_display_element_get_format(element));
+
+    json_builder_set_member_name(builder, "action");
+    json_builder_add_string_value(builder, ci_display_element_get_action(element));
+
+    ci_display_element_get_color(element, &col);
+    gchar *colstr = ci_color_to_string(&col);
+    json_builder_set_member_name(builder, "color");
+    json_builder_add_string_value(builder, colstr);
+    g_free(colstr);
+    
+    json_builder_end_object(builder);
 }

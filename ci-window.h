@@ -8,7 +8,7 @@ typedef enum {
     CIWindowModeEdit
 } CIWindowMode;
 
-gboolean ci_window_init(gint x, gint y, gint w, gint h);
+gboolean ci_window_init(void);
 void ci_window_show(gboolean mark_as_urgent, gboolean focus);
 void ci_window_update(void);
 void ci_window_hide(void);

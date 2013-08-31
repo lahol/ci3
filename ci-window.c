@@ -3,6 +3,7 @@
 #include "ci-display-elements.h"
 #include <glib/gprintf.h>
 #include <memory.h>
+#include "ci-config.h"
 
 GtkWidget *window = NULL;
 GtkWidget *darea;
@@ -50,8 +51,13 @@ gboolean ci_window_configure_event(GtkWidget *widget, GdkEventConfigure *event, 
 {
     win_x = event->x;
     win_y = event->y;
-    win_x = event->width;
-    win_y = event->height;
+    win_w = event->width;
+    win_h = event->height;
+
+    ci_config_set("window:x", GINT_TO_POINTER(win_x));
+    ci_config_set("window:y", GINT_TO_POINTER(win_y));
+    ci_config_set("window:width", GINT_TO_POINTER(win_w));
+    ci_config_set("window:height", GINT_TO_POINTER(win_h));
 
     return FALSE;
 }
@@ -74,7 +80,6 @@ gboolean ci_window_button_press_event(GtkWidget *widget, GdkEventButton *event, 
     }
     if (event->button == 1 && window_mode == CIWindowModeEdit/*event->state & GDK_SHIFT_MASK*/) {
         if (el) {
-            g_print("begin drag\n");
             drag_state.dragged_elements = g_list_prepend(drag_state.dragged_elements, (gpointer)el);
             drag_state.start_x = event->x;
             drag_state.start_y = event->y;
@@ -106,7 +111,6 @@ gboolean ci_window_button_release_event(GtkWidget *widget, GdkEventButton *event
 {
     GList *tmp;
     if (event->button == 1 && window_mode == CIWindowModeEdit/*(event->state & GDK_SHIFT_MASK)*/) {
-        g_print("end drag\n");
         gdouble dx = (gdouble)(event->x - drag_state.start_x);
         gdouble dy = (gdouble)(event->y - drag_state.start_y);
         tmp = drag_state.dragged_elements;
@@ -164,19 +168,20 @@ gboolean ci_window_scroll_event(GtkWidget *widget, GdkEventScroll *event, gpoint
     return TRUE;
 }
 
-gboolean ci_window_init(gint x, gint y, gint w, gint h)
+gboolean ci_window_init(void)
 {
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     if (window == NULL)
         return FALSE;
 
-    gtk_window_set_focus_on_map(GTK_WINDOW(window), FALSE);
-    gtk_window_set_default_size(GTK_WINDOW(window), w, h);
+    ci_config_get("window:x", (gpointer)&win_x);
+    ci_config_get("window:y", (gpointer)&win_y);
+    ci_config_get("window:width", (gpointer)&win_w);
+    ci_config_get("window:height", (gpointer)&win_h);
+    ci_config_get("window:background", (gpointer)&background_color);
 
-    win_x = x;
-    win_y = y;
-    win_w = w;
-    win_h = h;
+    gtk_window_set_focus_on_map(GTK_WINDOW(window), FALSE);
+    gtk_window_set_default_size(GTK_WINDOW(window), win_w, win_h);
 
     darea = gtk_drawing_area_new();
 
@@ -246,8 +251,10 @@ CIWindowMode ci_window_get_mode(void)
 
 void ci_window_set_background_color(GdkRGBA *color)
 {
-    if (color)
+    if (color) {
         memcpy(&background_color, color, sizeof(GdkRGBA));
+        ci_config_set("window:background", color);
+    }
 }
 
 gboolean ci_window_select_font_dialog(gpointer userdata)

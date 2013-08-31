@@ -3,6 +3,13 @@
 #include <glib/gprintf.h>
 #include <cinet.h>
 #include <memory.h>
+#include "ci-config.h"
+
+enum CIClientState {
+    CIClientStateNone = 0,
+    CIClientStateInitialized,
+    CIClientStateConnected
+};
 
 struct {
     GSocketClient *client;
@@ -10,30 +17,25 @@ struct {
     gchar *host;
     guint port;
     CIMsgCallback callback;
+    enum CIClientState state;
 } ciclient;
 
 void client_send_message(GSocketConnection *conn, gchar *data, gsize len)
 {
-    g_printf("send message\n");
     GSocket *socket = g_socket_connection_get_socket(conn);
     if (!socket)
         return;
-    g_printf("socket: %p\n", socket);
     if (!g_socket_is_connected(socket))
         return;
-    g_print("socket is connected\n");
     gssize bytes = 0;
     gssize rc;
     while (bytes < len) {
-        g_printf("written %d bytes\n", bytes);
         rc = g_socket_send(socket, &data[bytes], len-bytes, NULL, NULL);
         if (rc < 0) {
-            g_print("error sending\n");
             return;
         }
         bytes += rc;
     }
-    g_printf("done sending %zu bytes\n", bytes);
 }
 
 gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnection *conn)
@@ -76,6 +78,15 @@ gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnect
             }
             g_free(msgdata);
 
+            if (msg->msgtype == CI_NET_MSG_LEAVE) {
+                g_print("received leave reply\n");
+                ciclient.state = CIClientStateInitialized;
+                client_shutdown();
+            }
+            else if (msg->msgtype == CI_NET_MSG_SHUTDOWN) {
+                g_print("server shutdown\n");
+            }
+
             if (ciclient.callback)
                 ciclient.callback(msg);
             cinet_msg_free(msg);
@@ -105,6 +116,8 @@ void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer
         g_source_attach(sock_source, NULL);
     }
 
+    ciclient.state = CIClientStateConnected;
+
     gchar *buffer = NULL;
     gsize len = 0;
     CINetMsg *msg = cinet_message_new(CI_NET_MSG_VERSION, 
@@ -116,13 +129,21 @@ void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer
     cinet_msg_free(msg);
 }
 
-void client_start(gchar *host, guint port, CIMsgCallback callback)
+void client_start(CIMsgCallback callback)
 {
+    gchar *host = NULL;
+    guint port = 0;
+    ci_config_get("client:host", (gpointer)&host);
+    ci_config_get("client:port", (gpointer)&port);
+
     ciclient.client = g_socket_client_new();
     ciclient.host = g_strdup(host);
     ciclient.port = port;
     ciclient.callback = callback;
     ciclient.connection = NULL;
+
+    ciclient.state = CIClientStateInitialized;
+
     g_socket_client_connect_to_host_async(ciclient.client,
             host, port, NULL, (GAsyncReadyCallback)client_connected_func, NULL);
 }
@@ -132,20 +153,27 @@ void client_stop(void)
     g_print("client_stop\n");
     gchar *buffer = NULL;
     gsize len;
-    CINetMsg *msg = cinet_message_new(CI_NET_MSG_LEAVE, NULL, NULL);
-    if (cinet_msg_write_msg(&buffer, &len, msg) == 0) {
-        client_send_message(ciclient.connection, buffer, len);
-        g_free(buffer);
+
+    if (ciclient.state == CIClientStateConnected) {
+        CINetMsg *msg = cinet_message_new(CI_NET_MSG_LEAVE, NULL, NULL);
+        if (cinet_msg_write_msg(&buffer, &len, msg) == 0) {
+            client_send_message(ciclient.connection, buffer, len);
+            g_free(buffer);
+        }
+        cinet_msg_free(msg);
     }
-    cinet_msg_free(msg);
 }
 
 void client_shutdown(void)
 {
     g_print("client_shutdown\n");
 /*    client_stop();*/
-    g_socket_shutdown(g_socket_connection_get_socket(ciclient.connection), TRUE, TRUE, NULL);
-    g_free(ciclient.host);
+    if (ciclient.state == CIClientStateInitialized) {
+        g_socket_shutdown(g_socket_connection_get_socket(ciclient.connection), TRUE, TRUE, NULL);
+        g_free(ciclient.host);
 
-    g_object_unref(ciclient.connection);
+        g_object_unref(ciclient.connection);
+
+        ciclient.state = CIClientStateNone;
+    }
 }
