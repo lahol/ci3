@@ -124,6 +124,16 @@ void handle_save_config(void)
     ci_config_save();
 }
 
+void handle_connect(gpointer userdata)
+{
+    if ((gboolean)(gulong)userdata) {
+        client_stop();
+    }
+    else {
+        client_connect();
+    }
+}
+
 void init_display(void)
 {
     ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_entry, NULL);
@@ -150,7 +160,8 @@ int main(int argc, char **argv)
         handle_edit_element,
         handle_edit_mode,
         handle_edit_color,
-        handle_save_config
+        handle_save_config,
+        handle_connect
     };
     ci_menu_init(ci_property_get, &menu_cb);
 

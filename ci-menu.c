@@ -8,7 +8,8 @@ enum CIMenuItemType {
     CIMenuItemTypeEditFormat,
     CIMenuItemTypeEditMode,
     CIMenuItemTypeEditColor,
-    CIMenuItemTypeSaveConfig
+    CIMenuItemTypeSaveConfig,
+    CIMenuItemTypeConnect
 };
 
 struct CIMenuItem {
@@ -89,7 +90,16 @@ GtkWidget *ci_menu_popup_menu(gpointer userdata)
     ci_menu_reset();
     GtkWidget *popup = gtk_menu_new();
 
+    gboolean connected = FALSE;
+
+    if (property_callback)
+        property_callback("client-connected", (gpointer)&connected);
+
     ci_menu_append_menu_item(popup, "Show", CIMenuItemTypeShow, NULL);
+    ci_menu_append_stock_menu_item(popup,
+            connected ? GTK_STOCK_DISCONNECT : GTK_STOCK_CONNECT,
+            CIMenuItemTypeConnect,
+            (gpointer)(gulong)(connected ? TRUE : FALSE));
     ci_menu_append_separator(popup);
     ci_menu_append_stock_menu_item(popup, GTK_STOCK_QUIT, CIMenuItemTypeQuit, NULL);
 
@@ -161,6 +171,10 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
         case CIMenuItemTypeSaveConfig:
             if (ci_menu_callbacks.handle_save_config)
                 ci_menu_callbacks.handle_save_config();
+            break;
+        case CIMenuItemTypeConnect:
+            if (ci_menu_callbacks.handle_connect)
+                ci_menu_callbacks.handle_connect(menu_item->data);
             break;
         default:
             break;
