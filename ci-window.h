@@ -16,10 +16,11 @@ void ci_window_destroy(void);
 
 void ci_window_set_mode(CIWindowMode mode);
 CIWindowMode ci_window_get_mode(void);
+gboolean ci_window_is_visible(void);
 
 void ci_window_set_background_color(GdkRGBA *color);
 
-gboolean ci_window_select_font_dialog(gpointer userdata);
+gboolean ci_window_select_font_dialog(gchar **fontname);
 gboolean ci_window_edit_element_dialog(gpointer userdata);
 gboolean ci_window_choose_color_dialog(GdkRGBA *color);
 

@@ -257,16 +257,27 @@ void ci_window_set_background_color(GdkRGBA *color)
     }
 }
 
-gboolean ci_window_select_font_dialog(gpointer userdata)
+gboolean ci_window_is_visible(void)
+{
+    return (window && gtk_widget_get_visible(window));
+}
+
+gboolean ci_window_select_font_dialog(gchar **fontname)
 {
     GtkWidget *dialog = gtk_font_chooser_dialog_new("Select Font", GTK_WINDOW(window));
+
+    if (fontname && *fontname)
+        gtk_font_chooser_set_font(GTK_FONT_CHOOSER(dialog), *fontname);
+    else
+        gtk_font_chooser_set_font(GTK_FONT_CHOOSER(dialog), "Sans Bold 10");
 
     GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     if (result == GTK_RESPONSE_OK) {
-        gchar *fontname = gtk_font_chooser_get_font(GTK_FONT_CHOOSER(dialog));
-        ci_display_element_set_font((CIDisplayElement*)userdata, fontname);
-        g_free(fontname);
+        if (fontname) {
+            g_free(*fontname);
+            *fontname = gtk_font_chooser_get_font(GTK_FONT_CHOOSER(dialog));
+        }
     }
 
     gtk_widget_destroy(dialog);

@@ -16,9 +16,12 @@ void handle_quit(void)
     gtk_main_quit();
 }
 
-void handle_show(void)
+void handle_show(gpointer userdata)
 {
-    ci_window_show(TRUE, FALSE);
+    if (userdata)
+        ci_window_hide();
+    else
+        ci_window_show(TRUE, FALSE);
 }
 
 gchar *ci_format_entry(gchar conversion_symbol, gpointer userdata)
@@ -97,7 +100,12 @@ void handle_edit_element(gpointer userdata)
 
 void handle_select_font(gpointer userdata)
 {
-    if (ci_window_select_font_dialog(userdata)) {
+    if (!userdata)
+        return;
+    gchar *font = g_strdup(ci_display_element_get_font((CIDisplayElement*)userdata));
+    if (ci_window_select_font_dialog(&font)) {
+        ci_display_element_set_font((CIDisplayElement*)userdata, font);
+        g_free(font);
         ci_window_update();
     }
 }

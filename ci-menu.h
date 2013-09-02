@@ -6,7 +6,7 @@
 
 typedef struct {
     void (*handle_quit)(void);
-    void (*handle_show)(void);
+    void (*handle_show)(gpointer data);
     void (*handle_edit_font)(gpointer data);
     void (*handle_edit_element)(gpointer data);
     void (*handle_edit_mode)(gpointer data);

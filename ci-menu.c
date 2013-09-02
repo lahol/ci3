@@ -91,11 +91,15 @@ GtkWidget *ci_menu_popup_menu(gpointer userdata)
     GtkWidget *popup = gtk_menu_new();
 
     gboolean connected = FALSE;
+    gboolean visible = FALSE;
 
-    if (property_callback)
+    if (property_callback) {
         property_callback("client-connected", (gpointer)&connected);
+        property_callback("window-visible", (gpointer)&visible);
+    }
 
-    ci_menu_append_menu_item(popup, "Show", CIMenuItemTypeShow, NULL);
+    ci_menu_append_menu_item(popup, visible ? "Hide" : "Show",
+            CIMenuItemTypeShow, (gpointer)(gulong)(visible ? TRUE : FALSE));
     ci_menu_append_stock_menu_item(popup,
             connected ? GTK_STOCK_DISCONNECT : GTK_STOCK_CONNECT,
             CIMenuItemTypeConnect,
@@ -150,7 +154,7 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
             break;
         case CIMenuItemTypeShow:
             if (ci_menu_callbacks.handle_show)
-                ci_menu_callbacks.handle_show();
+                ci_menu_callbacks.handle_show(menu_item->data);
             break;
         case CIMenuItemTypeEditFont:
             if (ci_menu_callbacks.handle_edit_font)

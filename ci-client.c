@@ -103,8 +103,11 @@ void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer
         ciclient.cancel = NULL;
         return;
     }
-    ciclient.connection = g_socket_client_connect_to_host_finish(source, result, NULL);
+    GError *err = NULL;
+    ciclient.connection = g_socket_client_connect_to_host_finish(source, result, &err);
     if (!ciclient.connection) {
+        g_printf("no connection: %s\n", err->message);
+        g_error_free(err);
         return;
     }
     g_print("connection established\n");
