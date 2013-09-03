@@ -10,6 +10,7 @@
 #include "ci-properties.h"
 #include "ci-config.h"
 #include "ci-call-list.h"
+#include "ci-utils.h"
 #include <memory.h>
 
 void handle_quit(void)
@@ -77,7 +78,7 @@ void msg_callback(CINetMsg *msg)
                 ((CINetMsgVersion*)msg)->human_readable);
     }
     else if (msg->msgtype == CI_NET_MSG_EVENT_RING) {
-        ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_call_info,
+        ci_display_element_set_content_all((CIFormatCallback)ci_format_call_info,
                 (gpointer)&((CINetMsgEventRing*)msg)->callinfo);
         ci_window_update();
         ci_window_show(((CINetMsgMultipart*)msg)->stage == MultipartStageInit ? TRUE : FALSE, FALSE);
@@ -92,22 +93,35 @@ void msg_callback(CINetMsg *msg)
 
 void handle_edit_element(gpointer userdata)
 {
-    if (ci_window_edit_element_dialog(userdata)) {
-        ci_display_element_set_content(userdata, (CIDisplayElementFormatCallback)ci_format_call_info, NULL);
+    if (userdata == NULL)
+        return;
+    CIDisplayContext *ctx = (CIDisplayContext*)userdata;
+    if (ctx->type == CIDisplayContextDisplayElement &&
+        ci_window_edit_element_dialog(ctx->data[0])) {
+        ci_display_element_set_content(ctx->data[0], (CIFormatCallback)ci_format_call_info, NULL);
         ci_window_update();
     }
+
+    g_free(ctx);
 }
 
 void handle_select_font(gpointer userdata)
 {
-    if (!userdata)
+    if (userdata == NULL)
         return;
-    gchar *font = g_strdup(ci_display_element_get_font((CIDisplayElement*)userdata));
-    if (ci_window_select_font_dialog(&font)) {
-        ci_display_element_set_font((CIDisplayElement*)userdata, font);
-        g_free(font);
-        ci_window_update();
+    CIDisplayContext *ctx = (CIDisplayContext*)userdata;
+    gchar *font = NULL;
+
+    if (ctx->type == CIDisplayContextDisplayElement) {
+        font = g_strdup(ci_display_element_get_font((CIDisplayElement*)ctx->data[0]));
+        if (ci_window_select_font_dialog(&font)) {
+            ci_display_element_set_font((CIDisplayElement*)ctx->data[0], font);
+            g_free(font);
+            ci_window_update();
+        }
     }
+
+    g_free(ctx);
 }
 
 void handle_edit_mode(gpointer userdata)
@@ -117,14 +131,18 @@ void handle_edit_mode(gpointer userdata)
 
 void handle_edit_color(gpointer userdata)
 {
+    if (userdata == NULL)
+        return;
+    CIDisplayContext *ctx = (CIDisplayContext*)userdata;
     GdkRGBA color;
     if (ci_window_choose_color_dialog(&color)) {
-        if (userdata)
-            ci_display_element_set_color((CIDisplayElement*)userdata, &color);
-        else
+        if (ctx->type == CIDisplayContextDisplayElement)
+            ci_display_element_set_color((CIDisplayElement*)ctx->data[0], &color);
+        else if (ctx->type == CIDisplayContextNone)
             ci_window_set_background_color(&color);
         ci_window_update();
     }
+    g_free(ctx);
 }
 
 void handle_save_config(void)
@@ -211,9 +229,13 @@ void handle_list_reload(gint offset, gint count)
 
 void init_display(void)
 {
-    ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_call_info, NULL);
+    ci_display_element_set_content_all((CIFormatCallback)ci_format_call_info, NULL);
     ci_call_list_set_reload_func(handle_list_reload);
+    ci_call_list_set_format_func((CIFormatCallback)ci_format_call_info);
     ci_call_list_set_line_count(6);
+    CICallListColumn *col = ci_call_list_append_column();
+    ci_call_list_set_column_format(col, "[%i] %D %T (%p) %n: %N");
+    ci_call_list_set_column_width(col, 100);
     ci_window_init();
 }
 
@@ -251,6 +273,7 @@ int main(int argc, char **argv)
     client_shutdown();
     ci_menu_cleanup();
     ci_display_element_clear_list();
+    ci_call_list_cleanup();
 
     return 0;
 }

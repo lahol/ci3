@@ -39,6 +39,8 @@ gboolean ci_window_event_draw(GtkWidget *widget,
 
     ci_display_element_render_all(cr);
 
+    ci_call_list_render(cr, 0, win_h);
+
     return FALSE;
 }
 
@@ -60,21 +62,33 @@ gboolean ci_window_configure_event(GtkWidget *widget, GdkEventConfigure *event, 
     ci_config_set("window:width", GINT_TO_POINTER(win_w));
     ci_config_set("window:height", GINT_TO_POINTER(win_h));
 
+    ci_window_update();
     return FALSE;
 }
 
 gboolean ci_window_button_press_event(GtkWidget *widget, GdkEventButton *event, gpointer userdata)
 {
     CIDisplayElement *el = ci_display_element_get_from_pos(event->x, event->y);
+    guint line, column;
+    gboolean inlist = ci_call_list_get_from_pos(event->x, event->y, &line, &column);
 
     GtkWidget *ctx_menu = NULL;
 
     if (event->button == 3) {
-        if (/*event->state & GDK_SHIFT_MASK*/window_mode == CIWindowModeEdit)
-            ctx_menu = ci_menu_context_menu((gpointer)el);
-        else 
-            ctx_menu = ci_menu_context_menu(NULL);
-
+        CIDisplayContext *ctx = g_malloc0(sizeof(CIDisplayContext));
+        if (el) {
+            ctx->type = CIDisplayContextDisplayElement;
+            ctx->data[0] = el;
+        }
+        else if (inlist) {
+            ctx->type = CIDisplayContextList;
+            ctx->data[0] = GUINT_TO_POINTER(line);
+            ctx->data[1] = GUINT_TO_POINTER(column);
+        }
+        else {
+            ctx->type = CIDisplayContextNone;
+        }
+        ctx_menu = ci_menu_context_menu(ctx);
 
         gtk_widget_show_all(ctx_menu);
         gtk_menu_popup(GTK_MENU(ctx_menu), NULL, NULL, NULL, NULL, event->button, event->time);
@@ -170,6 +184,8 @@ gboolean ci_window_scroll_event(GtkWidget *widget, GdkEventScroll *event, gpoint
         ci_call_list_scroll(-1);
     else if (event->direction == GDK_SCROLL_DOWN)
         ci_call_list_scroll(1);
+
+    ci_window_update();
     return TRUE;
 }
 

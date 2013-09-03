@@ -8,6 +8,17 @@ typedef enum {
     CIWindowModeEdit
 } CIWindowMode;
 
+typedef enum {
+    CIDisplayContextNone,
+    CIDisplayContextDisplayElement,
+    CIDisplayContextList
+} CIDisplayContextType;
+
+typedef struct {
+    CIDisplayContextType type;
+    gpointer data[2];
+} CIDisplayContext;
+
 gboolean ci_window_init(void);
 void ci_window_show(gboolean mark_as_urgent, gboolean focus);
 void ci_window_update(void);

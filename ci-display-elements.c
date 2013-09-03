@@ -195,36 +195,8 @@ void ci_display_element_get_color(CIDisplayElement *element, GdkRGBA *color)
         memcpy(color, &element->color, sizeof(GdkRGBA));
 }
 
-gchar *ci_display_element_concat_str_list(GList *str_list)
-{
-    GList *tmp;
-    gsize length = 0;
-    gsize pos = 0;
-    gchar *concat = NULL;
-
-    tmp = str_list;
-    while (tmp) {
-        if (tmp->data)
-            length += strlen((const gchar*)tmp->data);
-        tmp = g_list_next(tmp);
-    }
-
-    concat = g_malloc(length+1);
-
-    tmp = str_list;
-    while (tmp) {
-        if (tmp->data) {
-            strcpy(&concat[pos], (const gchar*)tmp->data);
-            pos += strlen((const gchar*)tmp->data);
-        }
-        tmp = g_list_next(tmp);
-    }
-
-    return concat;
-}
-
 void ci_display_element_set_content(CIDisplayElement *element,
-        CIDisplayElementFormatCallback format_cb, gpointer userdata)
+        CIFormatCallback format_cb, gpointer userdata)
 {
     if (element == NULL)
         return;
@@ -235,53 +207,18 @@ void ci_display_element_set_content(CIDisplayElement *element,
         return;
     }
 
+
+
     if (format_cb == NULL) {
         /* no format callback given, just copy string and return */
         element->content = g_strdup(element->format);
         return;
     }
 
-    gchar *format = g_strdup(element->format);
-    gchar *str = NULL;
-    GList *strlist = NULL;
-    gsize i = 0;
-
-    gchar *last = format;
-    while (format[i] != 0) {
-        if (format[i] == '%') {
-            if (format[i+1] == '%') {
-                format[i] = 0;
-                strlist = g_list_prepend(strlist, (gpointer)last);
-                strlist = g_list_prepend(strlist, (gpointer)"%");
-                last = &format[i+2];
-            }
-            else {
-                str = format_cb(format[i+1], userdata);
-                if (str != NULL) {
-                    format[i] = 0;
-                    strlist = g_list_prepend(strlist, (gpointer)last);
-                    strlist = g_list_prepend(strlist, (gpointer)str);
-                    last = &format[i+2];
-                }
-            }
-            i += 2;
-        }
-        else {
-            ++i;
-        }
-    }
-    if (last[0] != 0) {
-        strlist = g_list_prepend(strlist, (gpointer)last);
-    }
-
-    strlist = g_list_reverse(strlist);
-    element->content = ci_display_element_concat_str_list(strlist);
-
-    g_list_free(strlist);
-    g_free(format);
+    element->content = ci_util_format_string(element->format, format_cb, userdata);
 }
 
-void ci_display_element_set_content_all(CIDisplayElementFormatCallback format_cb, gpointer userdata)
+void ci_display_element_set_content_all(CIFormatCallback format_cb, gpointer userdata)
 {
     GList *tmp = ci_display_element_list;
     while (tmp) {

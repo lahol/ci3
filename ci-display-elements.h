@@ -2,6 +2,7 @@
 #define __CI_DISPLAY_DATA_H__
 
 #include <gtk/gtk.h>
+#include "ci-utils.h"
 
 typedef struct _CIDisplayElement CIDisplayElement;
 
@@ -35,12 +36,9 @@ const gchar *ci_display_element_get_format(CIDisplayElement *element);
 void ci_display_element_set_color(CIDisplayElement *element, GdkRGBA *color);
 void ci_display_element_get_color(CIDisplayElement *element, GdkRGBA *color);
 
-/* conversion_symbol, userdata */
-typedef gchar *(*CIDisplayElementFormatCallback)(gchar, gpointer);
-
 void ci_display_element_set_content(CIDisplayElement *element,
-        CIDisplayElementFormatCallback format_cb, gpointer userdata);
-void ci_display_element_set_content_all(CIDisplayElementFormatCallback format_cb, gpointer userdata);
+        CIFormatCallback format_cb, gpointer userdata);
+void ci_display_element_set_content_all(CIFormatCallback format_cb, gpointer userdata);
 const gchar *ci_display_element_get_content(CIDisplayElement *element);
 
 void ci_display_element_render(CIDisplayElement *element, cairo_t *cr);
