@@ -13,8 +13,16 @@ typedef void (*CICallListReloadFunc)(gint min_id, gint count);
 void ci_call_list_set_reload_func(CICallListReloadFunc func);
 void ci_call_list_set_format_func(CIFormatCallback func);
 
+gchar *ci_call_list_get_font(void);
+void ci_call_list_set_font(const gchar *font);
+
+void ci_call_list_set_color(GdkRGBA *color);
+
 void ci_call_list_set_line_count(guint count);
+
+void ci_call_list_update_lines(void);
 void ci_call_list_set_call(guint index, CICallInfo *call);
+CICallInfo *ci_call_list_get_call(guint index);
 
 void ci_call_list_set_item_count(guint count);
 
@@ -27,8 +35,12 @@ gboolean ci_call_list_get_from_pos(gdouble x, gdouble y, guint *line, guint *col
 
 CICallListColumn *ci_call_list_get_column(guint index);
 CICallListColumn *ci_call_list_append_column(void);
+
 void ci_call_list_set_column_format(CICallListColumn *column, const gchar *format);
+gchar *ci_call_list_get_column_format(CICallListColumn *column);
+
 void ci_call_list_set_column_width(CICallListColumn *column, gdouble width);
+gdouble ci_call_list_get_column_width(CICallListColumn *column);
 
 void ci_call_list_column_free(guint index);
 void ci_call_list_cleanup(void);

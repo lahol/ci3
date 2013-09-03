@@ -91,15 +91,40 @@ void msg_callback(CINetMsg *msg)
     }
 }
 
+void handle_edit_mode(gpointer userdata)
+{
+    ci_window_set_mode((gboolean)(gulong)userdata ? CIWindowModeNormal : CIWindowModeEdit);
+}
+
 void handle_edit_element(gpointer userdata)
 {
     if (userdata == NULL)
         return;
     CIDisplayContext *ctx = (CIDisplayContext*)userdata;
-    if (ctx->type == CIDisplayContextDisplayElement &&
-        ci_window_edit_element_dialog(ctx->data[0])) {
-        ci_display_element_set_content(ctx->data[0], (CIFormatCallback)ci_format_call_info, NULL);
-        ci_window_update();
+    char *format_string = NULL;
+    if (ctx->type == CIDisplayContextDisplayElement && ctx->data[0] != NULL) {
+        format_string = g_strdup(ci_display_element_get_format(ctx->data[0]));
+
+        if (ci_window_edit_element_dialog(&format_string)) {
+            ci_display_element_set_format(ctx->data[0], format_string);
+            ci_display_element_set_content(ctx->data[0], (CIFormatCallback)ci_format_call_info, NULL);
+            ci_window_update();
+        }
+        g_free(format_string);
+    }
+    else if (ctx->type == CIDisplayContextList) {
+        CICallListColumn *column = ci_call_list_get_column(GPOINTER_TO_UINT(ctx->data[1]));
+        if (column) {
+            format_string = g_strdup(ci_call_list_get_column_format(column));
+
+            if (ci_window_edit_element_dialog(&format_string)) {
+                ci_call_list_set_column_format(column, format_string);
+                ci_call_list_update_lines();
+                ci_window_update();
+            }
+
+            g_free(format_string);
+        }
     }
 
     g_free(ctx);
@@ -120,13 +145,16 @@ void handle_select_font(gpointer userdata)
             ci_window_update();
         }
     }
+    else if (ctx->type == CIDisplayContextList) {
+        font = g_strdup(ci_call_list_get_font());
+        if (ci_window_select_font_dialog(&font)) {
+            ci_call_list_set_font(font);
+            g_free(font);
+            ci_window_update();
+        }
+    }
 
     g_free(ctx);
-}
-
-void handle_edit_mode(gpointer userdata)
-{
-    ci_window_set_mode((gboolean)(gulong)userdata ? CIWindowModeNormal : CIWindowModeEdit);
 }
 
 void handle_edit_color(gpointer userdata)
@@ -140,6 +168,8 @@ void handle_edit_color(gpointer userdata)
             ci_display_element_set_color((CIDisplayElement*)ctx->data[0], &color);
         else if (ctx->type == CIDisplayContextNone)
             ci_window_set_background_color(&color);
+        else if (ctx->type == CIDisplayContextList)
+            ci_call_list_set_color(&color);
         ci_window_update();
     }
     g_free(ctx);

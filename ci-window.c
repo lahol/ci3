@@ -22,6 +22,8 @@ struct {
     gint start_x;
     gint start_y;
     GList *dragged_elements;
+    CICallListColumn *list_column;
+    gdouble start_width;
 } drag_state;
 
 gboolean ci_window_event_draw(GtkWidget *widget,
@@ -98,8 +100,15 @@ gboolean ci_window_button_press_event(GtkWidget *widget, GdkEventButton *event, 
             drag_state.dragged_elements = g_list_prepend(drag_state.dragged_elements, (gpointer)el);
             drag_state.start_x = event->x;
             drag_state.start_y = event->y;
+            drag_state.list_column = NULL;
 
             ci_display_element_drag_begin(el);
+        }
+        else if (inlist && column > 0) {
+            drag_state.start_x = event->x;
+            drag_state.start_y = event->y;
+            drag_state.list_column = ci_call_list_get_column(column - 1);
+            drag_state.start_width = ci_call_list_get_column_width(drag_state.list_column);
         }
     }
 
@@ -112,10 +121,16 @@ gboolean ci_window_motion_notify_event(GtkWidget *widget, GdkEventMotion *event,
     if ((event->state & GDK_BUTTON1_MASK) && window_mode == CIWindowModeEdit/*(event->state & GDK_SHIFT_MASK)*/) {
         gdouble dx = (gdouble)(event->x - drag_state.start_x);
         gdouble dy = (gdouble)(event->y - drag_state.start_y);
-        tmp = drag_state.dragged_elements;
-        while (tmp) {
-            ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy);
-            tmp = g_list_next(tmp);
+
+        if (drag_state.dragged_elements) {
+            tmp = drag_state.dragged_elements;
+            while (tmp) {
+                ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy);
+                tmp = g_list_next(tmp);
+            }
+        }
+        else if (drag_state.list_column) {
+            ci_call_list_set_column_width(drag_state.list_column, drag_state.start_width + dx);
         }
         ci_window_update();
     }
@@ -128,14 +143,22 @@ gboolean ci_window_button_release_event(GtkWidget *widget, GdkEventButton *event
     if (event->button == 1 && window_mode == CIWindowModeEdit/*(event->state & GDK_SHIFT_MASK)*/) {
         gdouble dx = (gdouble)(event->x - drag_state.start_x);
         gdouble dy = (gdouble)(event->y - drag_state.start_y);
-        tmp = drag_state.dragged_elements;
-        while (tmp) {
-            ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy);
-            ci_display_element_drag_finish((CIDisplayElement*)tmp->data);
-            tmp = g_list_next(tmp);
+
+        if (drag_state.dragged_elements) {
+            tmp = drag_state.dragged_elements;
+            while (tmp) {
+                ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy);
+                ci_display_element_drag_finish((CIDisplayElement*)tmp->data);
+                tmp = g_list_next(tmp);
+            }
+            g_list_free(drag_state.dragged_elements);
+            drag_state.dragged_elements = NULL;
         }
-        g_list_free(drag_state.dragged_elements);
-        drag_state.dragged_elements = NULL;
+        else if (drag_state.list_column) {
+            ci_call_list_set_column_width(drag_state.list_column, drag_state.start_width + dx);
+
+            drag_state.list_column = NULL;
+        }
         ci_window_update();
     }
     return TRUE;
@@ -306,9 +329,12 @@ gboolean ci_window_select_font_dialog(gchar **fontname)
     return (result == GTK_RESPONSE_OK);
 }
 
-gboolean ci_window_edit_element_dialog(gpointer userdata)
+gboolean ci_window_edit_element_dialog(gchar **format)
 {
-    GtkWidget *dialog = gtk_dialog_new_with_buttons("Edit Element",
+    if (format == NULL)
+        return FALSE;
+
+    GtkWidget *dialog = gtk_dialog_new_with_buttons("Edit Format String",
             GTK_WINDOW(window),
             GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
             GTK_STOCK_APPLY,
@@ -318,8 +344,7 @@ gboolean ci_window_edit_element_dialog(gpointer userdata)
             NULL);
 
     GtkWidget *entry, *content_area;
-    const gchar *format = ci_display_element_get_format((CIDisplayElement*)userdata);
-    GtkEntryBuffer *buffer = gtk_entry_buffer_new(format, -1);
+    GtkEntryBuffer *buffer = gtk_entry_buffer_new(*format, -1);
 
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     entry = gtk_entry_new_with_buffer(buffer);
@@ -331,8 +356,8 @@ gboolean ci_window_edit_element_dialog(gpointer userdata)
     GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     if (result == GTK_RESPONSE_APPLY) {
-        ci_display_element_set_format((CIDisplayElement*)userdata,
-                gtk_entry_buffer_get_text(buffer));
+        g_free(*format);
+        *format = g_strdup(gtk_entry_buffer_get_text(buffer));
     }
 
     g_object_unref(G_OBJECT(buffer));

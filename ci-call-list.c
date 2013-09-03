@@ -1,6 +1,7 @@
 #include "ci-call-list.h"
 #include <cinet.h>
 #include <glib/gprintf.h>
+#include <memory.h>
 
 struct _CICallListColumn {
     guint index;
@@ -18,8 +19,10 @@ struct {
     GList *columns;
     GList *lines;
     gchar *font;
+    GdkRGBA color;
     guint linecount;
     gdouble lineheight;
+    gdouble bottom;
     guint itemcount;
     guint offset;
     CICallListReloadFunc reload_func;
@@ -27,6 +30,7 @@ struct {
 } ci_call_list;
 
 void ci_call_list_free_line(CICallListLine *line);
+void ci_call_list_free_column(CICallListColumn *col);
 
 void ci_call_list_set_reload_func(CICallListReloadFunc func)
 {
@@ -36,6 +40,23 @@ void ci_call_list_set_reload_func(CICallListReloadFunc func)
 void ci_call_list_set_format_func(CIFormatCallback func)
 {
     ci_call_list.format_func = func;
+}
+
+gchar *ci_call_list_get_font(void)
+{
+    return ci_call_list.font;
+}
+
+void ci_call_list_set_font(const gchar *font)
+{
+    g_free(ci_call_list.font);
+    ci_call_list.font = g_strdup(font);
+}
+
+void ci_call_list_set_color(GdkRGBA *color)
+{
+    if (color != NULL)
+        memcpy(&ci_call_list.color, color, sizeof(GdkRGBA));
 }
 
 void ci_call_list_set_line_count(guint count)
@@ -73,6 +94,16 @@ void ci_call_list_format_line(CICallListLine *line)
     }
 }
 
+void ci_call_list_update_lines(void)
+{
+    GList *lines = ci_call_list.lines;
+
+    while (lines) {
+        ci_call_list_format_line((CICallListLine*)lines->data);
+        lines = g_list_next(lines);
+    }
+}
+
 void ci_call_list_set_call(guint index, CICallInfo *call)
 {
     CICallListLine *line = (CICallListLine*)g_list_nth_data(ci_call_list.lines, index);
@@ -80,6 +111,11 @@ void ci_call_list_set_call(guint index, CICallInfo *call)
         cinet_call_info_copy(&line->call, call);
         ci_call_list_format_line(line);
     }
+}
+
+CICallInfo *ci_call_list_get_call(guint index)
+{
+    return NULL;
 }
 
 void ci_call_list_set_item_count(guint count)
@@ -123,12 +159,33 @@ void ci_call_list_scroll(gint count)
 
 gboolean ci_call_list_get_from_pos(gdouble x, gdouble y, guint *line, guint *column)
 {
-    return FALSE;
+    if (ci_call_list.lineheight == 0 || ci_call_list.linecount == 0)
+        return FALSE;
+
+    gdouble top = ci_call_list.bottom - ci_call_list.lineheight * ci_call_list.linecount;
+    if (y < top)
+        return FALSE;
+
+    if (line) *line = (guint)((y-top)/ci_call_list.lineheight);
+
+    if (column) {
+        GList *col = ci_call_list.columns;
+        *column = 0;
+        while (col) {
+            if (x < ((CICallListColumn*)col->data)->width)
+                break;
+            x -= ((CICallListColumn*)col->data)->width;
+            ++(*column);
+            col = g_list_next(col);
+        }
+    }
+
+    return TRUE;
 }
 
 CICallListColumn *ci_call_list_get_column(guint index)
 {
-    return NULL;
+    return (CICallListColumn*)g_list_nth_data(ci_call_list.columns, index);
 }
 
 CICallListColumn *ci_call_list_append_column(void)
@@ -147,14 +204,34 @@ void ci_call_list_set_column_format(CICallListColumn *column, const gchar *forma
     }
 }
 
+gchar *ci_call_list_get_column_format(CICallListColumn *column)
+{
+    if (column)
+        return column->format;
+    return NULL;
+}
+
 void ci_call_list_set_column_width(CICallListColumn *column, gdouble width)
 {
     if (column != NULL)
-        column->width = width;
+        column->width = width >= 5.0 ? width : 5.0;
+}
+
+gdouble ci_call_list_get_column_width(CICallListColumn *column)
+{
+    if (column)
+        return column->width;
+    return 0;
 }
 
 void ci_call_list_column_free(guint index)
 {
+    GList *nth = g_list_nth(ci_call_list.columns, index);
+    if (nth) {
+        ci_call_list.columns = g_list_remove_link(ci_call_list.columns, nth);
+        ci_call_list_free_column((CICallListColumn*)nth->data);
+        g_free(nth);
+    }
 }
 
 void ci_call_list_free_line(CICallListLine *line)
@@ -190,14 +267,15 @@ void ci_call_list_render_line(cairo_t *cr, PangoLayout *layout, gdouble x, gdoub
     cairo_translate(cr, x, y);
 
     while (col && lcol) {
-        cairo_rectangle(cr, 0.0, 0.0, ((CICallListColumn*)col->data)->width, ci_call_list.lineheight);
-        cairo_clip(cr);
+  /*      cairo_rectangle(cr, 0.0, 0.0, ((CICallListColumn*)col->data)->width, ci_call_list.lineheight);
+        cairo_clip(cr);*/
 
+        pango_layout_set_width(layout, (int)(((CICallListColumn*)col->data)->width*PANGO_SCALE));
         pango_layout_set_text(layout, (gchar*)lcol->data, -1);
         pango_cairo_update_layout(cr, layout);
         pango_cairo_show_layout(cr, layout);
 
-        cairo_reset_clip(cr);
+/*        cairo_reset_clip(cr);*/
 
         x += ((CICallListColumn*)col->data)->width;
 
@@ -226,13 +304,16 @@ void ci_call_list_render(cairo_t *cr, gint left, gint bottom)
     pango_layout_get_size(layout, &w, &h);
 
     ci_call_list.lineheight = ((gdouble)h)/PANGO_SCALE;
+    ci_call_list.bottom = bottom;
 
     gdouble start = bottom - ci_call_list.linecount * ci_call_list.lineheight;
 
     GList *tmp;
     guint index;
 
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+    gdk_cairo_set_source_rgba(cr, &ci_call_list.color);
+    pango_layout_set_height(layout, -1);
+    pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
     
     for (tmp = ci_call_list.lines, index = 0;
          tmp != NULL && index < ci_call_list.linecount;
