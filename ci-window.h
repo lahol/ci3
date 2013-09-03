@@ -2,20 +2,15 @@
 #define __CI_WINDOW_H__
 
 #include <gtk/gtk.h>
+#include "ci-menu.h"
 
 typedef enum {
     CIWindowModeNormal,
     CIWindowModeEdit
 } CIWindowMode;
 
-typedef enum {
-    CIDisplayContextNone,
-    CIDisplayContextDisplayElement,
-    CIDisplayContextList
-} CIDisplayContextType;
-
 typedef struct {
-    CIDisplayContextType type;
+    CIContextType type;
     gpointer data[2];
 } CIDisplayContext;
 

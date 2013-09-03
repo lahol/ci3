@@ -7,7 +7,6 @@
 typedef struct _CIDisplayElement CIDisplayElement;
 
 CIDisplayElement *ci_display_element_new(void);
-void ci_display_element_free(CIDisplayElement *element);
 void ci_display_element_remove(CIDisplayElement *element);
 
 GList *ci_display_element_get_elements(void);

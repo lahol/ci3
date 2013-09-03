@@ -102,7 +102,7 @@ void handle_edit_element(gpointer userdata)
         return;
     CIDisplayContext *ctx = (CIDisplayContext*)userdata;
     char *format_string = NULL;
-    if (ctx->type == CIDisplayContextDisplayElement && ctx->data[0] != NULL) {
+    if (ctx->type == CIContextTypeDisplayElement && ctx->data[0] != NULL) {
         format_string = g_strdup(ci_display_element_get_format(ctx->data[0]));
 
         if (ci_window_edit_element_dialog(&format_string)) {
@@ -112,7 +112,7 @@ void handle_edit_element(gpointer userdata)
         }
         g_free(format_string);
     }
-    else if (ctx->type == CIDisplayContextList) {
+    else if (ctx->type == CIContextTypeList) {
         CICallListColumn *column = ci_call_list_get_column(GPOINTER_TO_UINT(ctx->data[1]));
         if (column) {
             format_string = g_strdup(ci_call_list_get_column_format(column));
@@ -130,6 +130,63 @@ void handle_edit_element(gpointer userdata)
     g_free(ctx);
 }
 
+void handle_add(gpointer userdata)
+{
+    g_printf("handle add\n");
+    if (userdata == NULL)
+        return;
+    CIDisplayContext *ctx = (CIDisplayContext*)userdata;
+
+    char *format_string = NULL;
+
+    if (ctx->type == CIContextTypeNone) {
+        CIDisplayElement *el = ci_display_element_new();
+
+        if (ci_window_edit_element_dialog(&format_string)) {
+            ci_display_element_set_format(el, format_string);
+            g_printf("element set format: %s\n", format_string);
+            ci_display_element_set_content(el, (CIFormatCallback)ci_format_call_info, NULL);
+        }
+        else {
+            ci_display_element_remove(el);
+        }
+    }
+    else if (ctx->type == CIContextTypeList) {
+        CICallListColumn *col = ci_call_list_append_column();
+
+        if (ci_window_edit_element_dialog(&format_string)) {
+            ci_call_list_set_column_format(col, format_string);
+            g_printf("column set format: %s\n", format_string);
+            ci_call_list_update_lines();
+        }
+        else {
+            ci_call_list_column_free(col);
+        }
+    }
+
+    ci_window_update();
+    g_free(ctx);
+    g_free(format_string);
+}
+
+void handle_remove(gpointer userdata)
+{
+    if (userdata == NULL)
+        return;
+
+    CIDisplayContext *ctx = (CIDisplayContext*)userdata;
+
+    if (ctx->type == CIContextTypeDisplayElement) {
+        ci_display_element_remove(ctx->data[0]);
+    }
+    else if (ctx->type == CIContextTypeList) {
+        ci_call_list_column_free_index(GPOINTER_TO_UINT(ctx->data[1]));
+    }
+
+    ci_window_update();
+    g_free(ctx);
+}
+
 void handle_select_font(gpointer userdata)
 {
     if (userdata == NULL)
@@ -137,7 +194,7 @@ void handle_select_font(gpointer userdata)
     CIDisplayContext *ctx = (CIDisplayContext*)userdata;
     gchar *font = NULL;
 
-    if (ctx->type == CIDisplayContextDisplayElement) {
+    if (ctx->type == CIContextTypeDisplayElement) {
         font = g_strdup(ci_display_element_get_font((CIDisplayElement*)ctx->data[0]));
         if (ci_window_select_font_dialog(&font)) {
             ci_display_element_set_font((CIDisplayElement*)ctx->data[0], font);
@@ -145,7 +202,7 @@ void handle_select_font(gpointer userdata)
             ci_window_update();
         }
     }
-    else if (ctx->type == CIDisplayContextList) {
+    else if (ctx->type == CIContextTypeList) {
         font = g_strdup(ci_call_list_get_font());
         if (ci_window_select_font_dialog(&font)) {
             ci_call_list_set_font(font);
@@ -164,11 +221,11 @@ void handle_edit_color(gpointer userdata)
     CIDisplayContext *ctx = (CIDisplayContext*)userdata;
     GdkRGBA color;
     if (ci_window_choose_color_dialog(&color)) {
-        if (ctx->type == CIDisplayContextDisplayElement)
+        if (ctx->type == CIContextTypeDisplayElement)
             ci_display_element_set_color((CIDisplayElement*)ctx->data[0], &color);
-        else if (ctx->type == CIDisplayContextNone)
+        else if (ctx->type == CIContextTypeNone)
             ci_window_set_background_color(&color);
-        else if (ctx->type == CIDisplayContextList)
+        else if (ctx->type == CIContextTypeList)
             ci_call_list_set_color(&color);
         ci_window_update();
     }
@@ -291,7 +348,9 @@ int main(int argc, char **argv)
         handle_edit_color,
         handle_save_config,
         handle_connect,
-        handle_refresh
+        handle_refresh,
+        handle_add,
+        handle_remove
     };
     ci_menu_init(ci_property_get, &menu_cb);
 

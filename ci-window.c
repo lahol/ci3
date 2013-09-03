@@ -79,18 +79,18 @@ gboolean ci_window_button_press_event(GtkWidget *widget, GdkEventButton *event, 
     if (event->button == 3) {
         CIDisplayContext *ctx = g_malloc0(sizeof(CIDisplayContext));
         if (el) {
-            ctx->type = CIDisplayContextDisplayElement;
+            ctx->type = CIContextTypeDisplayElement;
             ctx->data[0] = el;
         }
         else if (inlist) {
-            ctx->type = CIDisplayContextList;
+            ctx->type = CIContextTypeList;
             ctx->data[0] = GUINT_TO_POINTER(line);
             ctx->data[1] = GUINT_TO_POINTER(column);
         }
         else {
-            ctx->type = CIDisplayContextNone;
+            ctx->type = CIContextTypeNone;
         }
-        ctx_menu = ci_menu_context_menu(ctx);
+        ctx_menu = ci_menu_context_menu(ctx->type, ctx);
 
         gtk_widget_show_all(ctx_menu);
         gtk_menu_popup(GTK_MENU(ctx_menu), NULL, NULL, NULL, NULL, event->button, event->time);

@@ -42,7 +42,8 @@ gchar *ci_call_list_get_column_format(CICallListColumn *column);
 void ci_call_list_set_column_width(CICallListColumn *column, gdouble width);
 gdouble ci_call_list_get_column_width(CICallListColumn *column);
 
-void ci_call_list_column_free(guint index);
+void ci_call_list_column_free_index(guint index);
+void ci_call_list_column_free(CICallListColumn *column);
 void ci_call_list_cleanup(void);
 
 void ci_call_list_render(cairo_t *cr, gint left, gint bottom);

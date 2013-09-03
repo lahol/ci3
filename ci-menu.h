@@ -14,12 +14,20 @@ typedef struct {
     void (*handle_save_config)(void);
     void (*handle_connect)(gpointer data);
     void (*handle_refresh)(void);
+    void (*handle_add)(gpointer data);
+    void (*handle_remove)(gpointer data);
 } CIMenuItemCallbacks;
+
+typedef enum {
+    CIContextTypeNone,
+    CIContextTypeDisplayElement,
+    CIContextTypeList
+} CIContextType;
 
 void ci_menu_init(CIPropertyGetFunc prop_cb, CIMenuItemCallbacks *callbacks);
 void ci_menu_cleanup(void);
 
 extern GtkWidget *ci_menu_popup_menu(gpointer userdata);
-extern GtkWidget *ci_menu_context_menu(gpointer userdata);
+extern GtkWidget *ci_menu_context_menu(CIContextType ctxtype, gpointer userdata);
 
 #endif

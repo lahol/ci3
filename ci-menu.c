@@ -10,7 +10,9 @@ enum CIMenuItemType {
     CIMenuItemTypeEditColor,
     CIMenuItemTypeSaveConfig,
     CIMenuItemTypeConnect,
-    CIMenuItemTypeRefresh
+    CIMenuItemTypeRefresh,
+    CIMenuItemTypeAddElement,
+    CIMenuItemTypeRemoveElement
 };
 
 struct CIMenuItem {
@@ -111,7 +113,7 @@ GtkWidget *ci_menu_popup_menu(gpointer userdata)
     return popup;
 }
 
-GtkWidget *ci_menu_context_menu(gpointer userdata)
+GtkWidget *ci_menu_context_menu(CIContextType ctxtype, gpointer userdata)
 {
     ci_menu_reset();
     GtkWidget *popup = gtk_menu_new();
@@ -126,7 +128,18 @@ GtkWidget *ci_menu_context_menu(gpointer userdata)
     ci_menu_append_check_menu_item(popup, "Edit", CIMenuItemTypeEditMode,
                                    (gpointer)(gulong)(edit_mode ? TRUE : FALSE), edit_mode);
     if (edit_mode) {
-        if (userdata) {
+        ci_menu_append_separator(popup);
+        if (ctxtype == CIContextTypeNone) {
+            ci_menu_append_menu_item(popup, "Add Element", CIMenuItemTypeAddElement, userdata);
+        }
+        else if (ctxtype == CIContextTypeDisplayElement) {
+            ci_menu_append_menu_item(popup, "Remove Element", CIMenuItemTypeRemoveElement, userdata);
+        }
+        else if (ctxtype == CIContextTypeList) {
+            ci_menu_append_menu_item(popup, "Add Column", CIMenuItemTypeAddElement, userdata);
+            ci_menu_append_menu_item(popup, "Remove Column", CIMenuItemTypeRemoveElement, userdata);
+        }
+        if (ctxtype == CIContextTypeDisplayElement || ctxtype == CIContextTypeList) {
             ci_menu_append_separator(popup);
             ci_menu_append_menu_item(popup, "Edit Format", CIMenuItemTypeEditFormat, userdata);
             ci_menu_append_menu_item(popup, "Edit Font", CIMenuItemTypeEditFont, userdata);
@@ -186,6 +199,14 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
         case CIMenuItemTypeRefresh:
             if (ci_menu_callbacks.handle_refresh)
                 ci_menu_callbacks.handle_refresh();
+            break;
+        case CIMenuItemTypeAddElement:
+            if (ci_menu_callbacks.handle_add)
+                ci_menu_callbacks.handle_add(menu_item->data);
+            break;
+        case CIMenuItemTypeRemoveElement:
+            if (ci_menu_callbacks.handle_remove)
+                ci_menu_callbacks.handle_remove(menu_item->data);
             break;
         default:
             break;

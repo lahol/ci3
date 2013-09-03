@@ -30,7 +30,6 @@ struct {
 } ci_call_list;
 
 void ci_call_list_free_line(CICallListLine *line);
-void ci_call_list_free_column(CICallListColumn *col);
 
 void ci_call_list_set_reload_func(CICallListReloadFunc func)
 {
@@ -192,6 +191,7 @@ CICallListColumn *ci_call_list_append_column(void)
 {
     CICallListColumn *column = g_malloc0(sizeof(CICallListColumn));
     column->index = g_list_length(ci_call_list.columns);
+    column->width = 50.0;
     ci_call_list.columns = g_list_append(ci_call_list.columns, column);
     return column;
 }
@@ -224,12 +224,12 @@ gdouble ci_call_list_get_column_width(CICallListColumn *column)
     return 0;
 }
 
-void ci_call_list_column_free(guint index)
+void ci_call_list_column_free_index(guint index)
 {
     GList *nth = g_list_nth(ci_call_list.columns, index);
     if (nth) {
         ci_call_list.columns = g_list_remove_link(ci_call_list.columns, nth);
-        ci_call_list_free_column((CICallListColumn*)nth->data);
+        ci_call_list_column_free((CICallListColumn*)nth->data);
         g_free(nth);
     }
 }
@@ -243,7 +243,7 @@ void ci_call_list_free_line(CICallListLine *line)
     g_free(line);
 }
 
-void ci_call_list_free_column(CICallListColumn *col)
+void ci_call_list_column_free(CICallListColumn *col)
 {
     if (col == NULL)
         return;
@@ -253,7 +253,7 @@ void ci_call_list_free_column(CICallListColumn *col)
 
 void ci_call_list_cleanup(void)
 {
-    g_list_free_full(ci_call_list.columns, (GFreeFunc)ci_call_list_free_column);
+    g_list_free_full(ci_call_list.columns, (GFreeFunc)ci_call_list_column_free);
     g_list_free_full(ci_call_list.lines, (GFreeFunc)ci_call_list_free_line);
 }
 
@@ -267,17 +267,18 @@ void ci_call_list_render_line(cairo_t *cr, PangoLayout *layout, gdouble x, gdoub
     cairo_translate(cr, x, y);
 
     while (col && lcol) {
-  /*      cairo_rectangle(cr, 0.0, 0.0, ((CICallListColumn*)col->data)->width, ci_call_list.lineheight);
-        cairo_clip(cr);*/
+        cairo_rectangle(cr, 0.0, 0.0, ((CICallListColumn*)col->data)->width, ci_call_list.lineheight);
+        cairo_clip(cr);
 
         pango_layout_set_width(layout, (int)(((CICallListColumn*)col->data)->width*PANGO_SCALE));
         pango_layout_set_text(layout, (gchar*)lcol->data, -1);
         pango_cairo_update_layout(cr, layout);
         pango_cairo_show_layout(cr, layout);
 
-/*        cairo_reset_clip(cr);*/
+        cairo_reset_clip(cr);
 
         x += ((CICallListColumn*)col->data)->width;
+        cairo_translate(cr, ((CICallListColumn*)col->data)->width, 0.0);
 
         col = g_list_next(col);
         lcol = g_list_next(lcol);
