@@ -13,6 +13,7 @@ typedef struct {
     void (*handle_edit_color)(gpointer data);
     void (*handle_save_config)(void);
     void (*handle_connect)(gpointer data);
+    void (*handle_refresh)(void);
 } CIMenuItemCallbacks;
 
 void ci_menu_init(CIPropertyGetFunc prop_cb, CIMenuItemCallbacks *callbacks);

@@ -5,6 +5,12 @@
 #include <memory.h>
 #include "ci-config.h"
 
+struct CIClientQuery {
+    guint32 guid;
+    CIQueryMsgCallback callback;
+    gpointer userdata;
+};
+
 struct {
     GSocketClient *client;
     GSocketConnection *connection;
@@ -13,7 +19,67 @@ struct {
     CIMsgCallback callback;
     CIClientState state;
     GCancellable *cancel;
+    guint32 query_guid;
+    GList *queries;
 } ciclient;
+
+guint32 client_gen_guid(void)
+{
+    /* TODO: check that next id not in queue */
+    ++ciclient.query_guid;
+    if (ciclient.query_guid == 0)
+        ciclient.query_guid = 1;
+    return ciclient.query_guid;
+}
+
+struct CIClientQuery *client_query_new(CIQueryMsgCallback callback, gpointer userdata)
+{
+    struct CIClientQuery *query = g_malloc(sizeof(struct CIClientQuery));
+    query->guid = client_gen_guid();
+    query->callback = callback;
+    query->userdata = userdata;
+    ciclient.queries = g_list_prepend(ciclient.queries, query);
+
+    return query;
+}
+
+struct CIClientQuery *client_query_get(guint32 guid)
+{
+    GList *tmp = ciclient.queries;
+    while (tmp) {
+        if (((struct CIClientQuery*)tmp->data)->guid == guid)
+            return ((struct CIClientQuery*)tmp->data);
+        tmp = g_list_next(tmp);
+    }
+    return NULL;
+}
+
+void client_query_remove(struct CIClientQuery *query)
+{
+    ciclient.queries = g_list_remove(ciclient.queries, query);
+    g_free(query);
+}
+
+/* return TRUE to stop further propagation */
+gboolean client_handle_query_msg(CINetMsg *msg)
+{
+    if (msg == NULL)
+        return TRUE;
+    if (msg->guid == 0)
+        return FALSE;
+    struct CIClientQuery *query = client_query_get(msg->guid);
+    if (query == NULL)
+        return FALSE;
+
+    g_printf("handle query %u\n", msg->guid);
+
+    if (query->callback)
+        query->callback(msg, query->userdata);
+
+    client_query_remove(query);
+
+    return TRUE;
+}
 
 void client_send_message(GSocketConnection *conn, gchar *data, gsize len)
 {
@@ -46,6 +112,7 @@ gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnect
         bytes = g_socket_receive(socket, buf, CINET_HEADER_LENGTH, NULL, NULL);
         if (bytes <= 0) {
             g_print("error reading\n");
+            client_stop();
             return FALSE;
         }
         if (cinet_msg_read_header(&header, buf, bytes) < CINET_HEADER_LENGTH) {
@@ -60,6 +127,7 @@ gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnect
                     header.msglen-bytes, NULL, NULL);
             if (rc <= 0) {
                 g_print("error reading data\n");
+                client_stop();
                 return FALSE;
             }
             bytes += rc;
@@ -81,13 +149,14 @@ gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnect
             g_print("server shutdown\n");
         }
 
-        if (ciclient.callback)
+        if (!client_handle_query_msg(msg) && ciclient.callback)
             ciclient.callback(msg);
         cinet_msg_free(msg);
         return TRUE;
     }
     else if ((cond & G_IO_ERR) || (cond & G_IO_HUP)) {
         g_print("err || hup\n");
+        client_stop();
         return FALSE;
     }
 
@@ -212,10 +281,64 @@ void client_shutdown(void)
     if (ciclient.state == CIClientStateInitialized) {
         g_free(ciclient.host);
         ciclient.state = CIClientStateUnknown;
+        g_list_free_full(ciclient.queries, g_free);
     }
 }
 
 CIClientState client_get_state(void)
 {
     return ciclient.state;
+}
+
+/* va_list args) { va_arg(args, type); }*/ 
+void client_query_num_calls(CINetMsg **msg, guint32 guid, va_list ap)
+{
+    *msg = cinet_message_new(CI_NET_MSG_DB_NUM_CALLS, "guid", guid, NULL, NULL);
+}
+
+void client_query_call_list(CINetMsg **msg, guint32 guid, va_list ap)
+{
+    *msg = cinet_message_new(CI_NET_MSG_DB_CALL_LIST, "guid", guid, NULL, NULL);
+    gchar *key;
+    gpointer val;
+    do {
+        key = va_arg(ap, gchar*);
+        val = va_arg(ap, gpointer);
+        if (key) {
+            cinet_message_set_value(*msg, key, val);
+        }
+    } while (key);
+}
+
+void client_query(CIClientQueryType type, CIQueryMsgCallback callback, gpointer userdata, ...)
+{
+    va_list ap;
+    gchar *msgdata = NULL;
+    gsize msglen = 0;
+    CINetMsg *msg = NULL;
+
+    struct CIClientQuery *query = client_query_new(callback, userdata);
+
+    va_start(ap, userdata);
+    switch (type) {
+        case CIClientQueryNumCalls:
+            client_query_num_calls(&msg, query->guid, ap);
+            break;
+        case CIClientQueryCallList:
+            client_query_call_list(&msg, query->guid, ap);
+            break;
+        default:
+            break;
+    }
+    va_end(ap);
+
+    if (msg) {
+        /* TODO: set msg id */
+        cinet_msg_write_msg(&msgdata, &msglen, msg);
+
+        client_send_message(ciclient.connection, msgdata, msglen);
+
+        g_free(msgdata);
+        cinet_msg_free(msg);
+    }
 }

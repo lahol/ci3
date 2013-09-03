@@ -354,7 +354,7 @@ void ci_config_save_element_array(JsonBuilder *builder)
     GList *elements = ci_display_element_get_elements();
     GList *tmp;
 
-    for (tmp = g_list_reverse(elements); tmp != NULL; tmp = g_list_next(tmp)) {
+    for (tmp = g_list_last(elements); tmp != NULL; tmp = g_list_previous(tmp)) {
         ci_config_save_element(builder, (CIDisplayElement*)tmp->data);
     }
 

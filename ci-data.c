@@ -25,9 +25,9 @@ void ci_data_set_from_ring_event(CIDataSet *set, CINetMsgEventRing *msg, gboolea
     if (!msg || !set)
         return;
 #define SET_ENTR(entr, flag) do {\
-    if (msg->fields & flag) {\
+    if (msg->callinfo.fields & flag) {\
         if (set->entr) g_free(set->entr);\
-        set->entr = g_strdup(msg->entr);\
+        set->entr = g_strdup(msg->callinfo.entr);\
     }} while (0)
 
     SET_ENTR(completenumber, CIF_COMPLETENUMBER);

@@ -9,6 +9,7 @@
 #include "ci-data.h"
 #include "ci-properties.h"
 #include "ci-config.h"
+#include "ci-call-list.h"
 #include <memory.h>
 
 void handle_quit(void)
@@ -24,25 +25,9 @@ void handle_show(gpointer userdata)
         ci_window_show(TRUE, FALSE);
 }
 
-gchar *ci_format_entry(gchar conversion_symbol, gpointer userdata)
+gchar *ci_format_call_info(gchar conversion_symbol, CICallInfo *data)
 {
-    switch (conversion_symbol) {
-        case 'n': return "<number>";
-        case 'N': return "<name>";
-        case 'D': return "<date>";
-        case 'T': return "<time>";
-        case 'M': return "<msn>";
-        case 'A': return "<alias>";
-        case 'p': return "<areacode>";
-        case 'P': return "<area>";
-        default: return NULL;
-    }
-    return NULL;
-    
-}
-
-gchar *ci_format_entry_ring(gchar conversion_symbol, CINetMsgEventRing *data)
-{
+    static char static_buffer[256];
     switch (conversion_symbol) {
         case 'n':
             if (data) return data->number ? data->number : "<unknown>";
@@ -68,6 +53,13 @@ gchar *ci_format_entry_ring(gchar conversion_symbol, CINetMsgEventRing *data)
         case 'P':
             if (data) return data->area ? data->area : "<unknown>";
             return "<area>";
+        case 'i':
+            static_buffer[0] = 0;
+            if (data)
+                sprintf(static_buffer, "%d", data->id);
+            else
+                return "<id>";
+            return static_buffer;
         default:
             return NULL;
     }
@@ -76,6 +68,7 @@ gchar *ci_format_entry_ring(gchar conversion_symbol, CINetMsgEventRing *data)
 
 void msg_callback(CINetMsg *msg)
 {
+    g_printf("msg callback: guid: %u\n", msg->guid);
     if (msg->msgtype == CI_NET_MSG_VERSION) {
         g_printf("server version: %d.%d.%d (%s)\n", 
                 ((CINetMsgVersion*)msg)->major,
@@ -84,16 +77,23 @@ void msg_callback(CINetMsg *msg)
                 ((CINetMsgVersion*)msg)->human_readable);
     }
     else if (msg->msgtype == CI_NET_MSG_EVENT_RING) {
-        ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_entry_ring, (gpointer)msg);
+        ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_call_info,
+                (gpointer)&((CINetMsgEventRing*)msg)->callinfo);
         ci_window_update();
         ci_window_show(((CINetMsgMultipart*)msg)->stage == MultipartStageInit ? TRUE : FALSE, FALSE);
+    }
+    else if (msg->msgtype == CI_NET_MSG_DB_NUM_CALLS) {
+        g_printf("num calls: %d\n", ((CINetMsgDbNumCalls*)msg)->count);
+    }
+    else if (msg->msgtype == CI_NET_MSG_DB_CALL_LIST) {
+        g_printf("msg call list\n");
     }
 }
 
 void handle_edit_element(gpointer userdata)
 {
     if (ci_window_edit_element_dialog(userdata)) {
-        ci_display_element_set_content(userdata, (CIDisplayElementFormatCallback)ci_format_entry, NULL);
+        ci_display_element_set_content(userdata, (CIDisplayElementFormatCallback)ci_format_call_info, NULL);
         ci_window_update();
     }
 }
@@ -142,9 +142,78 @@ void handle_connect(gpointer userdata)
     }
 }
 
+void update_list_query_callback(CINetMsg *msg, gpointer userdata);
+
+void handle_refresh_list_reply(CINetMsg *msg, gpointer userdata)
+{
+    if (msg->msgtype != CI_NET_MSG_DB_CALL_LIST)
+        return;
+
+    GList *tmp = ((CINetMsgDbCallList*)msg)->calls;
+
+    while (tmp) {
+        g_print("[%03d]: %s %s %s %s (%s) %s %s\n",
+                ((CICallInfo*)tmp->data)->id,
+                ((CICallInfo*)tmp->data)->date,
+                ((CICallInfo*)tmp->data)->time,
+                ((CICallInfo*)tmp->data)->completenumber,
+                ((CICallInfo*)tmp->data)->name,
+                ((CICallInfo*)tmp->data)->areacode,
+                ((CICallInfo*)tmp->data)->number,
+                ((CICallInfo*)tmp->data)->area);
+        tmp = g_list_next(tmp);
+    }
+}
+
+void handle_refresh_query_reply(CINetMsg *msg, gpointer userdata)
+{
+    if (msg->msgtype != CI_NET_MSG_DB_NUM_CALLS)
+        return;
+    g_printf("handle refresh query reply: %d calls\n",
+            ((CINetMsgDbNumCalls*)msg)->count);
+
+    client_query(CIClientQueryCallList, handle_refresh_list_reply, NULL,
+            "min-id", GINT_TO_POINTER(((CINetMsgDbNumCalls*)msg)->count-4),
+            "count", GINT_TO_POINTER(4), "user", GINT_TO_POINTER(0), NULL, NULL);
+}
+
+void handle_refresh(void)
+{
+    client_query(CIClientQueryNumCalls, update_list_query_callback, NULL, NULL, NULL);
+}
+
+void update_list_query_callback(CINetMsg *msg, gpointer userdata)
+{
+    if (msg->msgtype == CI_NET_MSG_DB_NUM_CALLS) {
+        ci_call_list_set_item_count(((CINetMsgDbNumCalls*)msg)->count);
+        ci_call_list_set_offset(0);
+    }
+    else if (msg->msgtype == CI_NET_MSG_DB_CALL_LIST) {
+        GList *tmp;
+        guint index = 0;
+        for (tmp = g_list_last(((CINetMsgDbCallList*)msg)->calls);
+             tmp != NULL;
+             tmp = g_list_previous(tmp), ++index) {
+            ci_call_list_set_call(index, (CICallInfo*)tmp->data);
+        }
+    }
+}
+
+void handle_list_reload(gint offset, gint count)
+{
+    g_printf("reload: %d, %d\n", offset, count);
+    client_query(CIClientQueryCallList, update_list_query_callback, NULL,
+            "offset", GINT_TO_POINTER(offset),
+            "count", GINT_TO_POINTER(count),
+            "user", GINT_TO_POINTER(0),
+            NULL, NULL);
+}
+
 void init_display(void)
 {
-    ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_entry, NULL);
+    ci_display_element_set_content_all((CIDisplayElementFormatCallback)ci_format_call_info, NULL);
+    ci_call_list_set_reload_func(handle_list_reload);
+    ci_call_list_set_line_count(6);
     ci_window_init();
 }
 
@@ -169,7 +238,8 @@ int main(int argc, char **argv)
         handle_edit_mode,
         handle_edit_color,
         handle_save_config,
-        handle_connect
+        handle_connect,
+        handle_refresh
     };
     ci_menu_init(ci_property_get, &menu_cb);
 

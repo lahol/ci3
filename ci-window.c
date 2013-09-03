@@ -4,6 +4,7 @@
 #include <glib/gprintf.h>
 #include <memory.h>
 #include "ci-config.h"
+#include "ci-call-list.h"
 
 GtkWidget *window = NULL;
 GtkWidget *darea;
@@ -165,6 +166,10 @@ gboolean ci_window_key_release_event(GtkWidget *widget, GdkEventKey *event, gpoi
 
 gboolean ci_window_scroll_event(GtkWidget *widget, GdkEventScroll *event, gpointer userdata)
 {
+    if (event->direction == GDK_SCROLL_UP)
+        ci_call_list_scroll(-1);
+    else if (event->direction == GDK_SCROLL_DOWN)
+        ci_call_list_scroll(1);
     return TRUE;
 }
 

@@ -9,7 +9,8 @@ enum CIMenuItemType {
     CIMenuItemTypeEditMode,
     CIMenuItemTypeEditColor,
     CIMenuItemTypeSaveConfig,
-    CIMenuItemTypeConnect
+    CIMenuItemTypeConnect,
+    CIMenuItemTypeRefresh
 };
 
 struct CIMenuItem {
@@ -120,6 +121,8 @@ GtkWidget *ci_menu_context_menu(gpointer userdata)
     if (property_callback)
         property_callback("edit-mode", (gpointer)&edit_mode);
 
+    ci_menu_append_menu_item(popup, "Refresh", CIMenuItemTypeRefresh, NULL);
+
     ci_menu_append_check_menu_item(popup, "Edit", CIMenuItemTypeEditMode,
                                    (gpointer)(gulong)(edit_mode ? TRUE : FALSE), edit_mode);
     if (edit_mode) {
@@ -179,6 +182,10 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
         case CIMenuItemTypeConnect:
             if (ci_menu_callbacks.handle_connect)
                 ci_menu_callbacks.handle_connect(menu_item->data);
+            break;
+        case CIMenuItemTypeRefresh:
+            if (ci_menu_callbacks.handle_refresh)
+                ci_menu_callbacks.handle_refresh();
             break;
         default:
             break;
