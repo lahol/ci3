@@ -16,8 +16,10 @@ void ci_call_list_set_format_func(CIFormatCallback func);
 gchar *ci_call_list_get_font(void);
 void ci_call_list_set_font(const gchar *font);
 
+void ci_call_list_get_color(GdkRGBA *color);
 void ci_call_list_set_color(GdkRGBA *color);
 
+guint ci_call_list_get_line_count(void);
 void ci_call_list_set_line_count(guint count);
 
 void ci_call_list_update_lines(void);
@@ -33,6 +35,7 @@ void ci_call_list_scroll(gint count);
 
 gboolean ci_call_list_get_from_pos(gdouble x, gdouble y, guint *line, guint *column);
 
+GList *ci_call_list_get_columns(void);
 CICallListColumn *ci_call_list_get_column(guint index);
 CICallListColumn *ci_call_list_append_column(void);
 

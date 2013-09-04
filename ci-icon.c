@@ -1,4 +1,5 @@
 #include "ci-icon.h"
+#include "ci-window.h"
 
 GtkStatusIcon *ci_status_icon = NULL;
 CIGetMenu ci_get_menu_cb = NULL;
@@ -16,6 +17,11 @@ void ci_icon_popup_menu(GtkStatusIcon *icon, guint button, guint activate_time, 
             (gpointer)ci_status_icon, button, activate_time);
 }
 
+void ci_icon_activate(GtkStatusIcon *icon, gpointer userdata)
+{
+    ci_window_show(FALSE, TRUE);
+}
+
 gboolean ci_icon_create(CIGetMenu get_menu_cb, gpointer userdata)
 {
     ci_status_icon = gtk_status_icon_new_from_file("cilogo.svg");
@@ -28,6 +34,7 @@ gboolean ci_icon_create(CIGetMenu get_menu_cb, gpointer userdata)
     ci_get_menu_cb_data = userdata;
 
     g_signal_connect(G_OBJECT(ci_status_icon), "popup-menu", G_CALLBACK(ci_icon_popup_menu), NULL);
+    g_signal_connect(G_OBJECT(ci_status_icon), "activate", G_CALLBACK(ci_icon_activate), NULL);
 
     return TRUE;
 }

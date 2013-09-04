@@ -3,6 +3,7 @@
 #include <glib/gprintf.h>
 #include <gtk/gtk.h>
 #include "ci-display-elements.h"
+#include "ci-call-list.h"
 #include <memory.h>
 
 struct CIConfig {
@@ -59,12 +60,18 @@ gboolean ci_config_load_client(JsonNode *node);
 gboolean ci_config_load_window(JsonNode *node);
 gboolean ci_config_load_element_array(JsonNode *node);
 gboolean ci_config_load_element(JsonNode *node);
+gboolean ci_config_load_list(JsonNode *node);
+gboolean ci_config_load_list_column_array(JsonNode *node);
+gboolean ci_config_load_list_column(JsonNode *node);
 
 JsonNode *ci_config_save_root(void);
 void ci_config_save_client(JsonBuilder *builder);
 void ci_config_save_window(JsonBuilder *builder);
 void ci_config_save_element_array(JsonBuilder *builder);
 void ci_config_save_element(JsonBuilder *builder, CIDisplayElement *element);
+void ci_config_save_list(JsonBuilder *builder);
+void ci_config_save_list_column_array(JsonBuilder *builder);
+void ci_config_save_list_column(JsonBuilder *builder, CICallListColumn *column);
 
 gboolean ci_config_load(void)
 {
@@ -190,6 +197,9 @@ gboolean ci_config_load_root(JsonNode *node)
     if (json_object_has_member(obj, "elements") &&
             !ci_config_load_element_array(json_object_get_member(obj, "elements")))
         return FALSE;
+    if (json_object_has_member(obj, "list") &&
+            !ci_config_load_list(json_object_get_member(obj, "list")))
+        return FALSE;
     return TRUE;
 }
 
@@ -285,6 +295,67 @@ gboolean ci_config_load_element(JsonNode *node)
     return TRUE;
 }
 
+gboolean ci_config_load_list(JsonNode *node)
+{
+    if (!JSON_NODE_HOLDS_OBJECT(node))
+        return FALSE;
+    JsonObject *obj = json_node_get_object(node);
+
+    if (json_object_has_member(obj, "linecount"))
+        ci_call_list_set_line_count(json_object_get_int_member(obj, "linecount"));
+    
+    if (json_object_has_member(obj, "font"))
+        ci_call_list_set_font(json_object_get_string_member(obj, "font"));
+
+    GdkRGBA col;
+    if (json_object_has_member(obj, "color")) {
+        ci_string_to_color(&col, json_object_get_string_member(obj, "color"));
+        ci_call_list_set_color(&col);
+    }
+
+    if (json_object_has_member(obj, "columns"))
+        return ci_config_load_list_column_array(json_object_get_member(obj, "columns"));
+
+    return TRUE;
+}
+
+gboolean ci_config_load_list_column_array(JsonNode *node)
+{
+    if (!JSON_NODE_HOLDS_ARRAY(node))
+        return FALSE;
+    JsonArray *arr = json_node_get_array(node);
+    GList *columns = json_array_get_elements(arr);
+    GList *tmp;
+
+    gboolean result = TRUE;
+    for (tmp = columns; tmp != NULL; tmp = g_list_next(tmp)) {
+        if (!ci_config_load_list_column((JsonNode*)tmp->data)) {
+            result = FALSE;
+            break;
+        }
+    }
+
+    g_list_free(columns);
+
+    return result;
+}
+
+gboolean ci_config_load_list_column(JsonNode *node)
+{
+    if (!JSON_NODE_HOLDS_OBJECT(node))
+        return FALSE;
+    JsonObject *obj = json_node_get_object(node);
+    CICallListColumn *column = ci_call_list_append_column();
+
+    if (json_object_has_member(obj, "format"))
+        ci_call_list_set_column_format(column, json_object_get_string_member(obj, "format"));
+
+    if (json_object_has_member(obj, "width"))
+        ci_call_list_set_column_width(column, json_object_get_double_member(obj, "width"));
+
+    return TRUE;
+}
+
 JsonNode *ci_config_save_root(void)
 {
     JsonBuilder *builder = json_builder_new();
@@ -300,6 +371,9 @@ JsonNode *ci_config_save_root(void)
 
     json_builder_set_member_name(builder, "elements");
     ci_config_save_element_array(builder);
+
+    json_builder_set_member_name(builder, "list");
+    ci_config_save_list(builder);
 
     json_builder_end_object(builder);
 
@@ -391,5 +465,55 @@ void ci_config_save_element(JsonBuilder *builder, CIDisplayElement *element)
     json_builder_add_string_value(builder, colstr);
     g_free(colstr);
     
+    json_builder_end_object(builder);
+}
+
+void ci_config_save_list(JsonBuilder *builder)
+{
+    json_builder_begin_object(builder);
+
+    /* linecount, font, color, columns */
+    json_builder_set_member_name(builder, "linecount");
+    json_builder_add_int_value(builder, ci_call_list_get_line_count());
+
+    json_builder_set_member_name(builder, "font");
+    json_builder_add_string_value(builder, ci_call_list_get_font());
+
+    GdkRGBA col;
+    ci_call_list_get_color(&col);
+    gchar *colstr = ci_color_to_string(&col);
+    json_builder_set_member_name(builder, "color");
+    json_builder_add_string_value(builder, colstr);
+    g_free(colstr);
+
+    json_builder_set_member_name(builder, "columns");
+    ci_config_save_list_column_array(builder);
+
+    json_builder_end_object(builder);
+}
+
+void ci_config_save_list_column_array(JsonBuilder *builder)
+{
+    json_builder_begin_array(builder);
+
+    GList *columns;
+
+    for (columns = ci_call_list_get_columns(); columns != NULL; columns = g_list_next(columns)) {
+        ci_config_save_list_column(builder, (CICallListColumn*)columns->data);
+    }
+
+    json_builder_end_array(builder);
+}
+
+void ci_config_save_list_column(JsonBuilder *builder, CICallListColumn *column)
+{
+    json_builder_begin_object(builder);
+
+    json_builder_set_member_name(builder, "format");
+    json_builder_add_string_value(builder, ci_call_list_get_column_format(column));
+
+    json_builder_set_member_name(builder, "width");
+    json_builder_add_double_value(builder, ci_call_list_get_column_width(column));
+
     json_builder_end_object(builder);
 }

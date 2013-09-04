@@ -52,10 +52,21 @@ void ci_call_list_set_font(const gchar *font)
     ci_call_list.font = g_strdup(font);
 }
 
+void ci_call_list_get_color(GdkRGBA *color)
+{
+    if (color != NULL)
+        memcpy(color, &ci_call_list.color, sizeof(GdkRGBA));
+}
+
 void ci_call_list_set_color(GdkRGBA *color)
 {
     if (color != NULL)
         memcpy(&ci_call_list.color, color, sizeof(GdkRGBA));
+}
+
+guint ci_call_list_get_line_count(void)
+{
+    return ci_call_list.linecount;
 }
 
 void ci_call_list_set_line_count(guint count)
@@ -180,6 +191,11 @@ gboolean ci_call_list_get_from_pos(gdouble x, gdouble y, guint *line, guint *col
     }
 
     return TRUE;
+}
+
+GList *ci_call_list_get_columns(void)
+{
+    return  ci_call_list.columns;
 }
 
 CICallListColumn *ci_call_list_get_column(guint index)

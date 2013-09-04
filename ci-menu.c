@@ -146,7 +146,7 @@ GtkWidget *ci_menu_context_menu(CIContextType ctxtype, gpointer userdata)
             ci_menu_append_menu_item(popup, "Edit Color", CIMenuItemTypeEditColor, userdata);
         }
         ci_menu_append_separator(popup);
-        ci_menu_append_menu_item(popup, "Edit Background Color", CIMenuItemTypeEditColor, NULL);
+        ci_menu_append_menu_item(popup, "Edit Background Color", CIMenuItemTypeEditColor, userdata);
 
         ci_menu_append_separator(popup);
         ci_menu_append_menu_item(popup, "Save Config", CIMenuItemTypeSaveConfig, NULL);

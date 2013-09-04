@@ -302,6 +302,8 @@ void update_list_query_callback(CINetMsg *msg, gpointer userdata)
             ci_call_list_set_call(index, (CICallInfo*)tmp->data);
         }
     }
+
+    ci_window_update();
 }
 
 void handle_list_reload(gint offset, gint count)
@@ -317,12 +319,9 @@ void handle_list_reload(gint offset, gint count)
 void init_display(void)
 {
     ci_display_element_set_content_all((CIFormatCallback)ci_format_call_info, NULL);
-    ci_call_list_set_reload_func(handle_list_reload);
     ci_call_list_set_format_func((CIFormatCallback)ci_format_call_info);
-    ci_call_list_set_line_count(6);
-    CICallListColumn *col = ci_call_list_append_column();
-    ci_call_list_set_column_format(col, "[%i] %D %T (%p) %n: %N");
-    ci_call_list_set_column_width(col, 100);
+    ci_call_list_update_lines();
+    ci_call_list_set_reload_func(handle_list_reload);
     ci_window_init();
 }
 
