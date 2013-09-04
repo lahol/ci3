@@ -68,10 +68,14 @@ void ci_display_element_drag_begin(CIDisplayElement *element)
     element->flags |= CIDisplayElementFlagDragged;
 }
 
-void ci_display_element_drag_update(CIDisplayElement *element, gdouble dx, gdouble dy)
+void ci_display_element_drag_update(CIDisplayElement *element, gdouble dx, gdouble dy, gdouble gridsize)
 {
     if (element == NULL || !(element->flags & CIDisplayElementFlagDragged))
         return;
+    if (gridsize > 1.0) {
+        dx = (gdouble)((gint)((element->x + dx + 0.5 * gridsize)/gridsize))*gridsize - element->x;
+        dy = (gdouble)((gint)((element->y + dy + 0.5 * gridsize)/gridsize))*gridsize - element->y;
+    }
     element->dx = dx;
     element->dy = dy;
 }

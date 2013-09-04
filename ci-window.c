@@ -124,10 +124,14 @@ gboolean ci_window_motion_notify_event(GtkWidget *widget, GdkEventMotion *event,
         gdouble dx = (gdouble)(event->x - drag_state.start_x);
         gdouble dy = (gdouble)(event->y - drag_state.start_y);
 
+        gdouble gs = 1.0;
+        if (event->state & GDK_CONTROL_MASK)
+            gs = 10.0;
+
         if (drag_state.dragged_elements) {
             tmp = drag_state.dragged_elements;
             while (tmp) {
-                ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy);
+                ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy, gs);
                 tmp = g_list_next(tmp);
             }
         }
@@ -146,10 +150,14 @@ gboolean ci_window_button_release_event(GtkWidget *widget, GdkEventButton *event
         gdouble dx = (gdouble)(event->x - drag_state.start_x);
         gdouble dy = (gdouble)(event->y - drag_state.start_y);
 
+        gdouble gs = 1.0;
+        if (event->state & GDK_CONTROL_MASK)
+            gs = 10.0;
+
         if (drag_state.dragged_elements) {
             tmp = drag_state.dragged_elements;
             while (tmp) {
-                ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy);
+                ci_display_element_drag_update((CIDisplayElement*)tmp->data, dx, dy, gs);
                 ci_display_element_drag_finish((CIDisplayElement*)tmp->data);
                 tmp = g_list_next(tmp);
             }
