@@ -2,6 +2,7 @@
 #include <cinet.h>
 #include <glib/gprintf.h>
 #include <memory.h>
+#include "ci-properties.h"
 
 struct _CICallListColumn {
     guint index;
@@ -337,6 +338,26 @@ void ci_call_list_render(cairo_t *cr, gint left, gint bottom)
          tmp = g_list_next(tmp), ++index) {
         ci_call_list_render_line(cr, layout, left, start + index * ci_call_list.lineheight,
                 (CICallListLine*)tmp->data);
+    }
+
+    gboolean editmode;
+    ci_property_get("edit-mode", &editmode);
+    if (editmode) {
+        gdouble dashes[] = { 1.0 };
+        cairo_set_dash(cr, dashes, 1, 0.0);
+
+        cairo_identity_matrix(cr);
+        
+        cairo_move_to(cr, left, start);
+        cairo_line_to(cr, left, bottom);
+        cairo_stroke(cr);
+
+        for (tmp = ci_call_list.columns; tmp != NULL; tmp = g_list_next(tmp)) {
+            left += ((CICallListColumn*)tmp->data)->width;
+            cairo_move_to(cr, left, start);
+            cairo_line_to(cr, left, bottom);
+            cairo_stroke(cr);
+        }
     }
 
     g_object_unref(layout);

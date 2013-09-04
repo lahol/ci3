@@ -2,6 +2,7 @@
 #include <pango/pangocairo.h>
 #include <glib/gprintf.h>
 #include <string.h>
+#include "ci-properties.h"
 
 struct _CIDisplayElement {
     gdouble x;
@@ -234,7 +235,7 @@ const gchar *ci_display_element_get_content(CIDisplayElement *element)
     return NULL;
 }
 
-void ci_display_element_render(CIDisplayElement *element, cairo_t *cr)
+void ci_display_element_render(CIDisplayElement *element, cairo_t *cr, gboolean outline)
 {
     if (element == NULL)
         return;
@@ -271,14 +272,25 @@ void ci_display_element_render(CIDisplayElement *element, cairo_t *cr)
     pango_cairo_update_layout(cr, layout);
     pango_cairo_show_layout(cr, layout);
 
+    if (outline) {
+        /* inverse of background? */
+        /* cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); */
+        cairo_rectangle(cr, 0.0, 0.0, element->width, element->height);
+        gdouble dashes[] = { 1.0 };
+        cairo_set_dash(cr, dashes, 1, 0);
+        cairo_stroke(cr);
+    }
+
     g_object_unref(layout);
 }
 
 void ci_display_element_render_all(cairo_t *cr)
 {
     GList *tmp = ci_display_element_list;
+    gboolean editmode;
+    ci_property_get("edit-mode", &editmode);
     while (tmp) {
-        ci_display_element_render((CIDisplayElement*)tmp->data, cr);
+        ci_display_element_render((CIDisplayElement*)tmp->data, cr, editmode);
         tmp = g_list_next(tmp);
     }
 }

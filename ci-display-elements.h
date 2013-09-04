@@ -40,7 +40,7 @@ void ci_display_element_set_content(CIDisplayElement *element,
 void ci_display_element_set_content_all(CIFormatCallback format_cb, gpointer userdata);
 const gchar *ci_display_element_get_content(CIDisplayElement *element);
 
-void ci_display_element_render(CIDisplayElement *element, cairo_t *cr);
+void ci_display_element_render(CIDisplayElement *element, cairo_t *cr, gboolean outline);
 void ci_display_element_render_all(cairo_t *cr);
 
 #endif

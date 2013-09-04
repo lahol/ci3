@@ -17,6 +17,7 @@ struct {
     gchar *host;
     guint port;
     CIMsgCallback callback;
+    CIClientStateChangedFunc state_changed_cb;
     CIClientState state;
     GCancellable *cancel;
     guint32 query_guid;
@@ -70,8 +71,6 @@ gboolean client_handle_query_msg(CINetMsg *msg)
     struct CIClientQuery *query = client_query_get(msg->guid);
     if (query == NULL)
         return FALSE;
-
-    g_printf("handle query %u\n", msg->guid);
 
     if (query->callback)
         query->callback(msg, query->userdata);
@@ -207,6 +206,9 @@ void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer
 
     g_object_unref(ciclient.cancel);
     ciclient.cancel = NULL;
+
+    if (ciclient.state_changed_cb)
+        ciclient.state_changed_cb(CIClientStateConnected);
 }
 
 void client_start(CIMsgCallback callback)
@@ -226,6 +228,11 @@ void client_start(CIMsgCallback callback)
     ciclient.state = CIClientStateInitialized;
 
     client_connect();
+}
+
+void client_set_state_changed_callback(CIClientStateChangedFunc func)
+{
+    ciclient.state_changed_cb = func;
 }
 
 void client_connect(void) {
@@ -272,6 +279,9 @@ void client_stop(void)
 
     g_print("end client_stop\n");
     ciclient.state = CIClientStateInitialized;
+
+    if (ciclient.state_changed_cb)
+        ciclient.state_changed_cb(CIClientStateDisconnected);
 }
 
 void client_shutdown(void)
@@ -310,12 +320,15 @@ void client_query_call_list(CINetMsg **msg, guint32 guid, va_list ap)
     } while (key);
 }
 
-void client_query(CIClientQueryType type, CIQueryMsgCallback callback, gpointer userdata, ...)
+gboolean client_query(CIClientQueryType type, CIQueryMsgCallback callback, gpointer userdata, ...)
 {
     va_list ap;
     gchar *msgdata = NULL;
     gsize msglen = 0;
     CINetMsg *msg = NULL;
+
+    if (ciclient.state != CIClientStateConnected)
+        return FALSE;
 
     struct CIClientQuery *query = client_query_new(callback, userdata);
 
@@ -333,7 +346,6 @@ void client_query(CIClientQueryType type, CIQueryMsgCallback callback, gpointer 
     va_end(ap);
 
     if (msg) {
-        /* TODO: set msg id */
         cinet_msg_write_msg(&msgdata, &msglen, msg);
 
         client_send_message(ciclient.connection, msgdata, msglen);
@@ -341,4 +353,6 @@ void client_query(CIClientQueryType type, CIQueryMsgCallback callback, gpointer 
         g_free(msgdata);
         cinet_msg_free(msg);
     }
+
+    return TRUE;
 }

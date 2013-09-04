@@ -94,6 +94,7 @@ void msg_callback(CINetMsg *msg)
 void handle_edit_mode(gpointer userdata)
 {
     ci_window_set_mode((gboolean)(gulong)userdata ? CIWindowModeNormal : CIWindowModeEdit);
+    ci_window_update();
 }
 
 void handle_edit_element(gpointer userdata)
@@ -145,6 +146,8 @@ void handle_add(gpointer userdata)
         if (ci_window_edit_element_dialog(&format_string)) {
             ci_display_element_set_format(el, format_string);
             g_printf("element set format: %s\n", format_string);
+            ci_display_element_set_pos(el, (gdouble)GPOINTER_TO_INT(ctx->data[0]),
+                                           (gdouble)GPOINTER_TO_INT(ctx->data[1]));
             ci_display_element_set_content(el, (CIFormatCallback)ci_format_call_info, NULL);
         }
         else {
@@ -308,12 +311,17 @@ void update_list_query_callback(CINetMsg *msg, gpointer userdata)
 
 void handle_list_reload(gint offset, gint count)
 {
-    g_printf("reload: %d, %d\n", offset, count);
     client_query(CIClientQueryCallList, update_list_query_callback, NULL,
             "offset", GINT_TO_POINTER(offset),
             "count", GINT_TO_POINTER(count),
             "user", GINT_TO_POINTER(0),
             NULL, NULL);
+}
+
+void handle_client_state_change(CIClientState state)
+{
+    if (state == CIClientStateConnected)
+        handle_refresh();
 }
 
 void init_display(void)
@@ -332,7 +340,8 @@ int main(int argc, char **argv)
     if (!ci_config_load()) {
         g_printf("Failed to load configuration. Using defaults.\n");
     }
-
+    
+    client_set_state_changed_callback(handle_client_state_change);
     client_start(msg_callback);
 
     if (!ci_icon_create(ci_menu_popup_menu, NULL))

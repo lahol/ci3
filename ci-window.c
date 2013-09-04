@@ -89,6 +89,8 @@ gboolean ci_window_button_press_event(GtkWidget *widget, GdkEventButton *event, 
         }
         else {
             ctx->type = CIContextTypeNone;
+            ctx->data[0] = GINT_TO_POINTER(event->x);
+            ctx->data[1] = GINT_TO_POINTER(event->y);
         }
         ctx_menu = ci_menu_context_menu(ctx->type, ctx);
 
