@@ -2,6 +2,7 @@
 #define __CI_DISPLAY_DATA_H__
 
 #include <gtk/gtk.h>
+#include "gtk2-compat.h"
 #include "ci-utils.h"
 
 typedef struct _CIDisplayElement CIDisplayElement;

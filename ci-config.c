@@ -5,6 +5,7 @@
 #include "ci-display-elements.h"
 #include "ci-call-list.h"
 #include <memory.h>
+#include "gtk2-compat.h"
 
 struct CIConfig {
     gchar *host;

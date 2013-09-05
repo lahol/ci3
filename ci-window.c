@@ -46,6 +46,17 @@ gboolean ci_window_event_draw(GtkWidget *widget,
     return FALSE;
 }
 
+#if !GTK_CHECK_VERSION(3,0,0)
+gboolean ci_window_expose_event(GtkWidget *widget, GdkEvent *event, gpointer userdata)
+{
+    cairo_t *cr = gdk_cairo_create(widget->window);
+    gboolean res = ci_window_event_draw(widget, cr, userdata);
+    cairo_destroy(cr);
+
+    return res;
+}
+#endif
+
 gboolean ci_window_event_delete_event(GtkWidget *widget, GdkEvent *event, gpointer userdata)
 {
     ci_window_hide();
@@ -250,7 +261,11 @@ gboolean ci_window_init(void)
     gtk_container_add(GTK_CONTAINER(window), darea);
     gtk_widget_show(darea);
 
+#if GTK_CHECK_VERSION(3,0,0)
     g_signal_connect(G_OBJECT(darea), "draw", G_CALLBACK(ci_window_event_draw), NULL);
+#else
+    g_signal_connect(G_OBJECT(darea), "expose-event", G_CALLBACK(ci_window_expose_event), NULL);
+#endif
     g_signal_connect(G_OBJECT(darea), "button-press-event", G_CALLBACK(ci_window_button_press_event), NULL);
     g_signal_connect(G_OBJECT(darea), "motion-notify-event", G_CALLBACK(ci_window_motion_notify_event), NULL);
     g_signal_connect(G_OBJECT(darea), "button-release-event", G_CALLBACK(ci_window_button_release_event), NULL);
@@ -318,19 +333,32 @@ gboolean ci_window_is_visible(void)
 
 gboolean ci_window_select_font_dialog(gchar **fontname)
 {
-    GtkWidget *dialog = gtk_font_chooser_dialog_new("Select Font", GTK_WINDOW(window));
+#if GTK_CHECK_VERSION(3,2,0)
+    GtkWidget *dialog = gtk_font_chooser_dialog_new(NULL, GTK_WINDOW(window));
 
     if (fontname && *fontname)
         gtk_font_chooser_set_font(GTK_FONT_CHOOSER(dialog), *fontname);
     else
         gtk_font_chooser_set_font(GTK_FONT_CHOOSER(dialog), "Sans Bold 10");
+#else
+    GtkWidget *dialog = gtk_font_selection_dialog_new(NULL);
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(window));
 
+    if (fontname && *fontname)
+        gtk_font_selection_dialog_set_font_name(GTK_FONT_SELECTION_DIALOG(dialog), *fontname);
+    else
+        gtk_font_selection_dialog_set_font_name(GTK_FONT_SELECTION_DIALOG(dialog), "Sans Bold 10");
+#endif
     GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     if (result == GTK_RESPONSE_OK) {
         if (fontname) {
             g_free(*fontname);
+#if GTK_CHECK_VERSION(3,2,0)
             *fontname = gtk_font_chooser_get_font(GTK_FONT_CHOOSER(dialog));
+#else
+            *fontname = gtk_font_selection_dialog_get_font_name(GTK_FONT_SELECTION_DIALOG(dialog));
+#endif
         }
     }
 
@@ -378,13 +406,31 @@ gboolean ci_window_edit_element_dialog(gchar **format)
 
 gboolean ci_window_choose_color_dialog(GdkRGBA *color)
 {
-    GtkWidget *dialog = gtk_color_chooser_dialog_new("Select Color", GTK_WINDOW(window));
+#if GTK_CHECK_VERSION(3,2,0)
+    GtkWidget *dialog = gtk_color_chooser_dialog_new(NULL, GTK_WINDOW(window));
+#else
+    GtkWidget *dialog = gtk_color_selection_dialog_new(NULL);
+    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(window));
+#endif
 
     GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     if (result == GTK_RESPONSE_OK) {
         if (color) {
+#if GTK_CHECK_VERSION(3,2,0)
             gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(dialog), color);
+#else
+            GtkWidget *cch = gtk_color_selection_dialog_get_color_selection(GTK_COLOR_SELECTION_DIALOG(dialog));
+            GdkColor col;
+            guint alpha;
+            gtk_color_selection_get_current_color(GTK_COLOR_SELECTION(cch), &col);
+            alpha = gtk_color_selection_get_current_alpha(GTK_COLOR_SELECTION(cch));
+
+            color->red = col.red/65535.0f;
+            color->green = col.green/65535.0f;
+            color->blue = col.blue/65535.0f;
+            color->alpha = alpha/65535.0f;
+#endif
         }
     }
 

@@ -12,6 +12,7 @@
 #include "ci-call-list.h"
 #include "ci-utils.h"
 #include <memory.h>
+#include "gtk2-compat.h"
 
 void handle_quit(void)
 {

@@ -2,6 +2,7 @@
 #define __CI_WINDOW_H__
 
 #include <gtk/gtk.h>
+#include "gtk2-compat.h"
 #include "ci-menu.h"
 
 typedef enum {

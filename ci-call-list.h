@@ -2,6 +2,7 @@
 #define __CI_CALL_LIST_H__
 
 #include <gtk/gtk.h>
+#include "gtk2-compat.h"
 #include <cinetmsgs.h>
 #include "ci-utils.h"
 
