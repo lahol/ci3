@@ -280,7 +280,7 @@ void ci_display_element_render(CIDisplayElement *element, cairo_t *cr, gboolean 
         /* inverse of background? */
         /* cairo_set_source_rgb(cr, 0.0, 0.0, 0.0); */
         cairo_rectangle(cr, 0.0, 0.0, element->width, element->height);
-        gdouble dashes[] = { 1.0 };
+        gdouble dashes[] = { 2.0 };
         cairo_set_dash(cr, dashes, 1, 0);
         cairo_stroke(cr);
     }

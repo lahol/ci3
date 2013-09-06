@@ -343,7 +343,7 @@ void ci_call_list_render(cairo_t *cr, gint left, gint bottom)
     gboolean editmode;
     ci_property_get("edit-mode", &editmode);
     if (editmode) {
-        gdouble dashes[] = { 1.0 };
+        gdouble dashes[] = { 2.0 };
         cairo_set_dash(cr, dashes, 1, 0.0);
 
         cairo_identity_matrix(cr);

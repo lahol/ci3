@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-Wall -g `pkg-config --cflags glib-2.0 gio-2.0 gtk+-2.0 json-glib-1.0`
-LIBS=`pkg-config --libs glib-2.0 gio-2.0 gtk+-2.0 json-glib-1.0` -lcinet
+CFLAGS=-Wall -g `pkg-config --cflags glib-2.0 gio-2.0 gtk+-3.0 json-glib-1.0`
+LIBS=`pkg-config --libs glib-2.0 gio-2.0 gtk+-3.0 json-glib-1.0` -lcinet
 
 ci_SRC := $(wildcard *.c)
 ci_OBJ := $(ci_SRC:.c=.o)
