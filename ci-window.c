@@ -286,6 +286,8 @@ gboolean ci_window_init(void)
      /* g_signal_connect(G_OBJECT(darea), "button-press-event", "scroll-event", "destroy" */
     gtk_window_set_role(GTK_WINDOW(window), "MainWindow");
 
+    gtk_window_set_gravity(GTK_WINDOW(window), GDK_GRAVITY_STATIC);
+
     return TRUE;
 }
 
