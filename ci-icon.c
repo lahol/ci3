@@ -24,7 +24,16 @@ void ci_icon_activate(GtkStatusIcon *icon, gpointer userdata)
 
 gboolean ci_icon_create(CIGetMenu get_menu_cb, gpointer userdata)
 {
+#ifdef WIN32
+/*#include "cilogo.xpm"
+    GdkPixbuf *icon_pixbuf = gdk_pixbuf_new_from_xpm_data((const gchar**)cilogo);*/
+#include "cilogo-pixbuf.h"
+    GdkPixbuf *icon_pixbuf = gdk_pixbuf_new_from_inline(-1, cilogo, FALSE, NULL);
+
+    ci_status_icon = gtk_status_icon_new_from_pixbuf(icon_pixbuf);
+#else
     ci_status_icon = gtk_status_icon_new_from_file("cilogo.svg");
+#endif
     if (ci_status_icon == NULL)
         return FALSE;
 

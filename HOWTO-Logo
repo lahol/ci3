@@ -1,0 +1,1 @@
+convert -size 32x32 -background transparent cilogo.svg cilogo.xpm
