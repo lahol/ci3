@@ -60,7 +60,7 @@ gboolean ci_window_expose_event(GtkWidget *widget, GdkEvent *event, gpointer use
 gboolean ci_window_focus(GtkWidget *widget, GtkDirectionType dir, gpointer userdata)
 {
     g_printf("focus event\n");
-    gtk_window_set_urgency_hint(GTK_WINDOW(window), FALSE);
+/*    gtk_window_set_urgency_hint(GTK_WINDOW(window), FALSE);*/
     return FALSE;
 }
 
@@ -296,8 +296,8 @@ void ci_window_show(gboolean mark_as_urgent, gboolean focus)
     if (window) {
         gtk_window_present(GTK_WINDOW(window));
         gtk_window_move(GTK_WINDOW(window), win_x, win_y);
-        if (mark_as_urgent)
-            gtk_window_set_urgency_hint(GTK_WINDOW(window), TRUE);
+/*        if (mark_as_urgent)
+            gtk_window_set_urgency_hint(GTK_WINDOW(window), TRUE);*/
     }
 }
 
