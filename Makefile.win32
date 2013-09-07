@@ -2,7 +2,8 @@ CC=$(CROSS)gcc
 LD=$(CROSS)ld
 AR=$(CROSS)ar
 PKG_CONFIG=$(CROSS)pkg-config
-CFLAGS=-Wall -g -I$(CROSSENV)/usr/include `$(PKG_CONFIG) --cflags glib-2.0 gio-2.0 gtk+-2.0 json-glib-1.0`
+CFLAGS=-Wall -g -I$(CROSSENV)/usr/include `$(PKG_CONFIG) --cflags glib-2.0 gio-2.0 gtk+-2.0 json-glib-1.0` -mms-bitfields
+LDFLAGS=-Wl,-subsystem,windows
 LIBS=-L$(CROSSENV)/usr/lib `$(PKG_CONFIG) --libs glib-2.0 gio-2.0 gtk+-2.0 json-glib-1.0` -lcinet
 
 ci_SRC := $(wildcard *.c)
@@ -12,7 +13,7 @@ ci_HEADERS := $(wildcard *.h)
 all: ciclient.exe
 
 ciclient.exe: $(ci_OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 %.o: %.c $(ci_HEADERS)
 	$(CC) $(CFLAGS) -c -o $@ $<

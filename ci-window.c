@@ -57,6 +57,13 @@ gboolean ci_window_expose_event(GtkWidget *widget, GdkEvent *event, gpointer use
 }
 #endif
 
+gboolean ci_window_focus(GtkWidget *widget, GtkDirectionType dir, gpointer userdata)
+{
+    g_printf("focus event\n");
+    gtk_window_set_urgency_hint(GTK_WINDOW(window), FALSE);
+    return FALSE;
+}
+
 gboolean ci_window_event_delete_event(GtkWidget *widget, GdkEvent *event, gpointer userdata)
 {
     ci_window_hide();
@@ -271,6 +278,7 @@ gboolean ci_window_init(void)
     g_signal_connect(G_OBJECT(darea), "button-release-event", G_CALLBACK(ci_window_button_release_event), NULL);
     g_signal_connect(G_OBJECT(darea), "scroll-event", G_CALLBACK(ci_window_scroll_event), NULL);
 
+    g_signal_connect(G_OBJECT(window), "focus", G_CALLBACK(ci_window_focus), NULL);
     g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(ci_window_event_delete_event), NULL);
     g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(ci_window_configure_event), NULL);
     g_signal_connect(G_OBJECT(window), "key-press-event", G_CALLBACK(ci_window_key_press_event), NULL);
