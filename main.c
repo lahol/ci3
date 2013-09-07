@@ -14,6 +14,8 @@
 #include <memory.h>
 #include "gtk2-compat.h"
 
+void handle_refresh(void);
+
 void handle_quit(void)
 {
     gtk_main_quit();
@@ -83,6 +85,7 @@ void msg_callback(CINetMsg *msg)
                 (gpointer)&((CINetMsgEventRing*)msg)->callinfo);
         ci_window_update();
         ci_window_show(((CINetMsgMultipart*)msg)->stage == MultipartStageInit ? TRUE : FALSE, FALSE);
+        handle_refresh();
     }
     else if (msg->msgtype == CI_NET_MSG_DB_NUM_CALLS) {
         g_printf("num calls: %d\n", ((CINetMsgDbNumCalls*)msg)->count);
