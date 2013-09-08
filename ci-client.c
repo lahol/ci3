@@ -24,6 +24,8 @@ struct {
     GList *queries;
 } ciclient;
 
+void client_handle_connection_lost(void);
+
 guint32 client_gen_guid(void)
 {
     /* TODO: check that next id not in queue */
@@ -111,7 +113,7 @@ gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnect
         bytes = g_socket_receive(socket, buf, CINET_HEADER_LENGTH, NULL, NULL);
         if (bytes <= 0) {
             g_print("error reading\n");
-            client_stop();
+            client_handle_connection_lost();
             return FALSE;
         }
         if (cinet_msg_read_header(&header, buf, bytes) < CINET_HEADER_LENGTH) {
@@ -126,7 +128,7 @@ gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnect
                     header.msglen-bytes, NULL, NULL);
             if (rc <= 0) {
                 g_print("error reading data\n");
-                client_stop();
+                client_handle_connection_lost();
                 return FALSE;
             }
             bytes += rc;
@@ -155,7 +157,7 @@ gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnect
     }
     else if ((cond & G_IO_ERR) || (cond & G_IO_HUP)) {
         g_print("err || hup\n");
-        client_stop();
+        client_handle_connection_lost();
         return FALSE;
     }
 
@@ -176,6 +178,7 @@ void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer
     if (!ciclient.connection) {
         g_printf("no connection: %s\n", err->message);
         g_error_free(err);
+        ciclient.state = CIClientStateInitialized;
         return;
     }
     g_print("connection established\n");
@@ -284,10 +287,46 @@ void client_stop(void)
         ciclient.state_changed_cb(CIClientStateDisconnected);
 }
 
+gboolean client_try_connect_func(gpointer userdata)
+{
+    g_print("client_try_connect\n");
+    switch (ciclient.state) {
+        case CIClientStateConnecting:
+            /* still trying last one, do nothing */
+            g_print("client_try_connect: connecting\n");
+            return TRUE;
+        case CIClientStateConnected:
+            /* connected, remove timer */
+            g_print("client_try_connect: connected\n");
+            return FALSE;
+        case CIClientStateDisconnected:
+        case CIClientStateInitialized:
+            g_print("client_try_connect: start client\n");
+            client_connect();
+            return TRUE;
+        default:
+            g_print("client_try_connect: unhandled state\n");
+            return TRUE;
+    }
+}
+
+void client_handle_connection_lost(void)
+{
+    g_print("client_handle_connection_lost\n");
+
+    client_stop();
+    gint retry_interval = 0;
+    ci_config_get("client:retry-interval", &retry_interval);
+
+    g_printf("retry interval: %d\n", retry_interval);
+    if (retry_interval > 0) {
+        g_timeout_add_seconds(retry_interval, (GSourceFunc)client_try_connect_func, NULL);
+    }
+}
+
 void client_shutdown(void)
 {
     g_print("client_shutdown\n");
-/*    client_stop();*/
     if (ciclient.state == CIClientStateInitialized) {
         g_free(ciclient.host);
         ciclient.state = CIClientStateUnknown;
@@ -300,24 +339,20 @@ CIClientState client_get_state(void)
     return ciclient.state;
 }
 
-/* va_list args) { va_arg(args, type); }*/ 
-void client_query_num_calls(CINetMsg **msg, guint32 guid, va_list ap)
+CINetMsg *client_query_make_message(CINetMsgType type, guint32 guid, va_list ap)
 {
-    *msg = cinet_message_new(CI_NET_MSG_DB_NUM_CALLS, "guid", guid, NULL, NULL);
-}
-
-void client_query_call_list(CINetMsg **msg, guint32 guid, va_list ap)
-{
-    *msg = cinet_message_new(CI_NET_MSG_DB_CALL_LIST, "guid", guid, NULL, NULL);
+    CINetMsg *msg = cinet_message_new(type, "guid", guid, NULL, NULL);
     gchar *key;
     gpointer val;
+
     do {
         key = va_arg(ap, gchar*);
         val = va_arg(ap, gpointer);
-        if (key) {
-            cinet_message_set_value(*msg, key, val);
-        }
+        if (key)
+            cinet_message_set_value(msg, key, val);
     } while (key);
+
+    return msg;
 }
 
 gboolean client_query(CIClientQueryType type, CIQueryMsgCallback callback, gpointer userdata, ...)
@@ -327,6 +362,8 @@ gboolean client_query(CIClientQueryType type, CIQueryMsgCallback callback, gpoin
     gsize msglen = 0;
     CINetMsg *msg = NULL;
 
+    CINetMsgType msgtype = CI_NET_MSG_INVALID;
+
     if (ciclient.state != CIClientStateConnected)
         return FALSE;
 
@@ -334,15 +371,16 @@ gboolean client_query(CIClientQueryType type, CIQueryMsgCallback callback, gpoin
 
     va_start(ap, userdata);
     switch (type) {
-        case CIClientQueryNumCalls:
-            client_query_num_calls(&msg, query->guid, ap);
-            break;
-        case CIClientQueryCallList:
-            client_query_call_list(&msg, query->guid, ap);
-            break;
+        case CIClientQueryNumCalls: msgtype = CI_NET_MSG_DB_NUM_CALLS; break;
+        case CIClientQueryCallList: msgtype = CI_NET_MSG_DB_CALL_LIST; break;
+        case CIClientQueryGetCaller: msgtype = CI_NET_MSG_DB_GET_CALLER; break;
+        case CIClientQueryGetCallerList: msgtype = CI_NET_MSG_DB_GET_CALLER_LIST; break;
+        case CIClientQueryAddCaller: msgtype = CI_NET_MSG_DB_ADD_CALLER; break;
+        case CIClientQueryDelCaller: msgtype = CI_NET_MSG_DB_DEL_CALLER; break;
         default:
             break;
     }
+    msg = client_query_make_message(msgtype, query->guid, ap);
     va_end(ap);
 
     if (msg) {

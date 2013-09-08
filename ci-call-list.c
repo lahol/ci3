@@ -105,6 +105,12 @@ void ci_call_list_format_line(CICallListLine *line)
     }
 }
 
+void ci_call_list_reload(void)
+{
+    if (ci_call_list.reload_func)
+        ci_call_list.reload_func(ci_call_list.offset, ci_call_list.linecount);
+}
+
 void ci_call_list_update_lines(void)
 {
     GList *lines = ci_call_list.lines;
@@ -126,6 +132,11 @@ void ci_call_list_set_call(guint index, CICallInfo *call)
 
 CICallInfo *ci_call_list_get_call(guint index)
 {
+    CICallListLine *line = (CICallListLine*)g_list_nth_data(ci_call_list.lines, index);
+    if (line) {
+        return &line->call;
+    }
+
     return NULL;
 }
 

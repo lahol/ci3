@@ -13,8 +13,15 @@
 #include "ci-utils.h"
 #include <memory.h>
 #include "gtk2-compat.h"
+#include "ci-dialogs.h"
+
+CICallInfo last_call;
 
 void handle_refresh(void);
+void refresh_after_done(CINetMsg *msg, gpointer userdata)
+{
+    ci_call_list_reload();
+}
 
 void handle_quit(void)
 {
@@ -81,6 +88,7 @@ void msg_callback(CINetMsg *msg)
                 ((CINetMsgVersion*)msg)->human_readable);
     }
     else if (msg->msgtype == CI_NET_MSG_EVENT_RING) {
+        cinet_call_info_copy(&last_call, &((CINetMsgEventRing*)msg)->callinfo);
         ci_display_element_set_content_all((CIFormatCallback)ci_format_call_info,
                 (gpointer)&((CINetMsgEventRing*)msg)->callinfo);
         ci_window_update();
@@ -244,6 +252,47 @@ void handle_save_config(void)
     ci_config_save();
 }
 
+void handle_add_caller(gpointer userdata)
+{
+    g_print("add caller\n");
+    CIDisplayContext *ctx = (CIDisplayContext*)userdata;
+
+    CICallInfo *selection = NULL;
+    gint user;
+
+    ci_config_get("client:user", &user);
+
+    if (ctx->type == CIContextTypeList) {
+        selection = ci_call_list_get_call(GPOINTER_TO_UINT(ctx->data[0]));
+    }
+    else {
+        /* current call */
+        if (last_call.fields != 0) {
+            /* last call valid */
+            selection = &last_call;
+        }
+    }
+
+    CICallerInfo ci;
+
+    if (selection != NULL &&
+            selection->completenumber != NULL &&
+            selection->completenumber[0] != 0) {
+        g_printf("add caller: %s %s\n", selection->completenumber, selection->name);
+        cinet_caller_info_set_value(&ci, "number", selection->completenumber);
+        cinet_caller_info_set_value(&ci, "name", selection->name);
+
+        if (ci_dialogs_add_caller(&ci)) {
+            g_print("query: %d, %s -> %s\n", user, ci.number, ci.name);
+            client_query(CIClientQueryAddCaller, refresh_after_done, NULL,
+                    "user", user,
+                    "number", ci.number,
+                    "name", ci.name,
+                    NULL, NULL);
+        }
+    }
+}
+
 void handle_connect(gpointer userdata)
 {
     if ((gboolean)(gulong)userdata) {
@@ -256,7 +305,7 @@ void handle_connect(gpointer userdata)
 
 void update_list_query_callback(CINetMsg *msg, gpointer userdata);
 
-void handle_refresh_list_reply(CINetMsg *msg, gpointer userdata)
+/*void handle_refresh_list_reply(CINetMsg *msg, gpointer userdata)
 {
     if (msg->msgtype != CI_NET_MSG_DB_CALL_LIST)
         return;
@@ -284,11 +333,14 @@ void handle_refresh_query_reply(CINetMsg *msg, gpointer userdata)
     g_printf("handle refresh query reply: %d calls\n",
             ((CINetMsgDbNumCalls*)msg)->count);
 
+    gint user;
+    ci_config_get("client:user", &user);
+
     client_query(CIClientQueryCallList, handle_refresh_list_reply, NULL,
             "min-id", GINT_TO_POINTER(((CINetMsgDbNumCalls*)msg)->count-4),
-            "count", GINT_TO_POINTER(4), "user", GINT_TO_POINTER(0), NULL, NULL);
+            "count", GINT_TO_POINTER(4), "user", user, NULL, NULL);
 }
-
+*/
 void handle_refresh(void)
 {
     client_query(CIClientQueryNumCalls, update_list_query_callback, NULL, NULL, NULL);
@@ -315,10 +367,13 @@ void update_list_query_callback(CINetMsg *msg, gpointer userdata)
 
 void handle_list_reload(gint offset, gint count)
 {
+    gint user;
+    ci_config_get("client:user", &user);
+
     client_query(CIClientQueryCallList, update_list_query_callback, NULL,
             "offset", GINT_TO_POINTER(offset),
             "count", GINT_TO_POINTER(count),
-            "user", GINT_TO_POINTER(0),
+            "user", user,
             NULL, NULL);
 }
 
@@ -362,7 +417,8 @@ int main(int argc, char **argv)
         handle_connect,
         handle_refresh,
         handle_add,
-        handle_remove
+        handle_remove,
+        handle_add_caller
     };
     ci_menu_init(ci_property_get, &menu_cb);
 

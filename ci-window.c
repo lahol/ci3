@@ -449,3 +449,7 @@ gboolean ci_window_choose_color_dialog(GdkRGBA *color)
     return (result == GTK_RESPONSE_OK);
 }
 
+GtkWidget *ci_window_get_window(void)
+{
+    return window;
+}

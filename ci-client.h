@@ -14,7 +14,11 @@ typedef enum {
 
 typedef enum {
     CIClientQueryNumCalls,
-    CIClientQueryCallList
+    CIClientQueryCallList,
+    CIClientQueryGetCaller,
+    CIClientQueryAddCaller,
+    CIClientQueryDelCaller,
+    CIClientQueryGetCallerList
 } CIClientQueryType;
 
 typedef void (*CIMsgCallback)(CINetMsg *);

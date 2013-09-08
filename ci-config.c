@@ -15,6 +15,8 @@ struct CIConfig {
     gint win_y;
     gint win_w;
     gint win_h;
+    gint retry_interval;
+    gint user;
 } ci_config;
 
 gchar *ci_color_to_string(GdkRGBA *color)
@@ -53,6 +55,8 @@ void ci_config_set_defaults(void)
     ci_config.win_y = 0;
     ci_config.win_w = 200;
     ci_config.win_h = 100;
+    ci_config.retry_interval = 10;
+    ci_config.user = 0;
     ci_string_to_color(&ci_config.background, "#ffffff");
 }
 
@@ -81,6 +85,9 @@ gboolean ci_config_load(void)
     JsonParser *parser = json_parser_new();
     JsonNode *root;
     GError *err = NULL;
+
+    ci_config_set_defaults();
+
     if (!json_parser_load_from_file(parser, filename, &err)) {
         g_printf("load from file failed: %s\n", err->message);
         g_error_free(err);
@@ -148,6 +155,12 @@ gboolean ci_config_get(const gchar *key, gpointer value)
     else if (g_strcmp0(key, "window:height") == 0) {
         *((gint*)value) = ci_config.win_h;
     }
+    else if (g_strcmp0(key, "client:retry-interval") == 0) {
+        *((gint*)value) = ci_config.retry_interval;
+    }
+    else if (g_strcmp0(key, "client:user") == 0) {
+        *((gint*)value) = ci_config.user;
+    }
     else {
         return FALSE;
     }
@@ -177,6 +190,12 @@ gboolean ci_config_set(const gchar *key, gpointer value)
     }
     else if (g_strcmp0(key, "window:height") == 0) {
         ci_config.win_h = GPOINTER_TO_INT(value);
+    }
+    else if (g_strcmp0(key, "client:retry-interval") == 0) {
+        ci_config.retry_interval = GPOINTER_TO_INT(value);
+    }
+    else if (g_strcmp0(key, "client:user") == 0) {
+        ci_config.user = GPOINTER_TO_INT(value);
     }
     else {
         return FALSE;
@@ -214,6 +233,10 @@ gboolean ci_config_load_client(JsonNode *node)
         ci_config_set("client:host", (gpointer)json_object_get_string_member(obj, "host"));
     if (json_object_has_member(obj, "port"))
         ci_config_set("client:port", GUINT_TO_POINTER((guint)json_object_get_int_member(obj, "port")));
+    if (json_object_has_member(obj, "retry-interval"))
+        ci_config_set("client:retry-interval", GINT_TO_POINTER((gint)json_object_get_int_member(obj, "retry-interval")));
+    if (json_object_has_member(obj, "user"))
+        ci_config_set("client:user", GINT_TO_POINTER((gint)json_object_get_int_member(obj, "user")));
 
     return TRUE;
 }
@@ -394,6 +417,12 @@ void ci_config_save_client(JsonBuilder *builder)
 
     json_builder_set_member_name(builder, "port");
     json_builder_add_int_value(builder, ci_config.port);
+
+    json_builder_set_member_name(builder, "retry-interval");
+    json_builder_add_int_value(builder, ci_config.retry_interval);
+
+    json_builder_set_member_name(builder, "user");
+    json_builder_add_int_value(builder, ci_config.user);
 
     json_builder_end_object(builder);
 }

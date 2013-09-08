@@ -31,4 +31,6 @@ gboolean ci_window_select_font_dialog(gchar **fontname);
 gboolean ci_window_edit_element_dialog(gchar **format);
 gboolean ci_window_choose_color_dialog(GdkRGBA *color);
 
+GtkWidget *ci_window_get_window(void);
+
 #endif

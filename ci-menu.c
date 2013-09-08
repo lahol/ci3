@@ -12,7 +12,8 @@ enum CIMenuItemType {
     CIMenuItemTypeConnect,
     CIMenuItemTypeRefresh,
     CIMenuItemTypeAddElement,
-    CIMenuItemTypeRemoveElement
+    CIMenuItemTypeRemoveElement,
+    CIMenuItemTypeAddCaller
 };
 
 struct CIMenuItem {
@@ -153,6 +154,9 @@ GtkWidget *ci_menu_context_menu(CIContextType ctxtype, gpointer userdata)
     }
 
     ci_menu_append_separator(popup);
+    ci_menu_append_menu_item(popup, "Add to phonebook", CIMenuItemTypeAddCaller, userdata);
+
+    ci_menu_append_separator(popup);
     ci_menu_append_stock_menu_item(popup, GTK_STOCK_QUIT, CIMenuItemTypeQuit, NULL);
 
     return popup;
@@ -207,6 +211,10 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
         case CIMenuItemTypeRemoveElement:
             if (ci_menu_callbacks.handle_remove)
                 ci_menu_callbacks.handle_remove(menu_item->data);
+            break;
+        case CIMenuItemTypeAddCaller:
+            if (ci_menu_callbacks.handle_add_caller)
+                ci_menu_callbacks.handle_add_caller(menu_item->data);
             break;
         default:
             break;

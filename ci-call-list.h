@@ -23,6 +23,7 @@ void ci_call_list_set_color(GdkRGBA *color);
 guint ci_call_list_get_line_count(void);
 void ci_call_list_set_line_count(guint count);
 
+void ci_call_list_reload(void);
 void ci_call_list_update_lines(void);
 void ci_call_list_set_call(guint index, CICallInfo *call);
 CICallInfo *ci_call_list_get_call(guint index);
