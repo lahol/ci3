@@ -6,4 +6,6 @@
 
 gboolean ci_dialogs_add_caller(CICallerInfo *caller);
 
+void ci_dialogs_about(void);
+
 #endif

@@ -161,6 +161,9 @@ gboolean ci_config_get(const gchar *key, gpointer value)
     else if (g_strcmp0(key, "client:user") == 0) {
         *((gint*)value) = ci_config.user;
     }
+    else if (g_strcmp0(key, "config-file") == 0) {
+        *((gchar **)value) = ci_config_get_config_file();
+    }
     else {
         return FALSE;
     }

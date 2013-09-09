@@ -13,7 +13,8 @@ enum CIMenuItemType {
     CIMenuItemTypeRefresh,
     CIMenuItemTypeAddElement,
     CIMenuItemTypeRemoveElement,
-    CIMenuItemTypeAddCaller
+    CIMenuItemTypeAddCaller,
+    CIMenuItemTypeAbout
 };
 
 struct CIMenuItem {
@@ -124,6 +125,8 @@ GtkWidget *ci_menu_context_menu(CIContextType ctxtype, gpointer userdata)
     if (property_callback)
         property_callback("edit-mode", (gpointer)&edit_mode);
 
+    ci_menu_append_stock_menu_item(popup, GTK_STOCK_ABOUT, CIMenuItemTypeAbout, NULL);
+    ci_menu_append_separator(popup);
     ci_menu_append_menu_item(popup, "Refresh", CIMenuItemTypeRefresh, NULL);
 
     ci_menu_append_check_menu_item(popup, "Edit", CIMenuItemTypeEditMode,
@@ -215,6 +218,10 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
         case CIMenuItemTypeAddCaller:
             if (ci_menu_callbacks.handle_add_caller)
                 ci_menu_callbacks.handle_add_caller(menu_item->data);
+            break;
+        case CIMenuItemTypeAbout:
+            if (ci_menu_callbacks.handle_about)
+                ci_menu_callbacks.handle_about();
             break;
         default:
             break;

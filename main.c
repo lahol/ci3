@@ -383,6 +383,11 @@ void handle_client_state_change(CIClientState state)
         handle_refresh();
 }
 
+void handle_about(void)
+{
+    ci_dialogs_about();
+}
+
 void init_display(void)
 {
     ci_display_element_set_content_all((CIFormatCallback)ci_format_call_info, NULL);
@@ -418,7 +423,8 @@ int main(int argc, char **argv)
         handle_refresh,
         handle_add,
         handle_remove,
-        handle_add_caller
+        handle_add_caller,
+        handle_about
     };
     ci_menu_init(ci_property_get, &menu_cb);
 

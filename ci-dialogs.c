@@ -1,5 +1,6 @@
 #include "ci-dialogs.h"
 #include "ci-window.h"
+#include "ci-config.h"
 
 gboolean ci_dialogs_add_caller(CICallerInfo *caller)
 {
@@ -69,4 +70,23 @@ gboolean ci_dialogs_add_caller(CICallerInfo *caller)
     gtk_widget_destroy(dialog);
 
     return (result == GTK_RESPONSE_APPLY);
+}
+
+void ci_dialogs_about(void)
+{
+    gchar *cfgfile = NULL, *comment = NULL;
+
+    ci_config_get("config-file", &cfgfile);
+    comment = g_strconcat("Configuration file: ", cfgfile, NULL);
+    gchar *authors[] = { "Holger Langenau", NULL };
+
+    gtk_show_about_dialog(GTK_WINDOW(ci_window_get_window()),
+            "program-name", "CallerInfo",
+            "version", "2.9",
+            "comments", comment,
+            "authors", authors,
+            NULL);
+
+    g_free(comment);
+    g_free(cfgfile);
 }
