@@ -79,10 +79,13 @@ void ci_dialogs_about(void)
     ci_config_get("config-file", &cfgfile);
     comment = g_strconcat("Configuration file: ", cfgfile, NULL);
     gchar *authors[] = { "Holger Langenau", NULL };
+#ifndef CIVERSION
+#define CIVERSION "2.9"
+#endif
 
     gtk_show_about_dialog(GTK_WINDOW(ci_window_get_window()),
             "program-name", "CallerInfo",
-            "version", "2.9",
+            "version", CIVERSION,
             "comments", comment,
             "authors", authors,
             NULL);

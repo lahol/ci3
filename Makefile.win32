@@ -13,6 +13,10 @@ ci_OBJ := $(ci_SRC:.c=.o)
 #ci_HEADERS := $(filter-out cilogo-pixbuf.h, $(wildcard *.h))
 ci_HEADERS := $(wildcard *.h)
 
+CIVERSION := '$(shell git describe --tags --always)  ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
+
+CFLAGS += -DCIVERSION=\"${CIVERSION}\"
+
 all: ciclient.exe
 
 ciclient.exe: $(ci_OBJ) ciclient.o
