@@ -29,11 +29,15 @@ void ci_call_list_set_call(guint index, CICallInfo *call);
 CICallInfo *ci_call_list_get_call(guint index);
 
 void ci_call_list_set_item_count(guint count);
+guint ci_call_list_get_item_count(void);
 
 void ci_call_list_set_offset(guint offset);
 guint ci_call_list_get_offset(void);
 
 void ci_call_list_scroll(gint count);
+void ci_call_list_scroll_page(gint count);
+void ci_call_list_scroll_head(void);
+void ci_call_list_scroll_tail(void);
 
 gboolean ci_call_list_get_from_pos(gdouble x, gdouble y, guint *line, guint *column);
 

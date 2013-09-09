@@ -145,6 +145,11 @@ void ci_call_list_set_item_count(guint count)
     ci_call_list.itemcount = count;
 }
 
+guint ci_call_list_get_item_count(void)
+{
+    return ci_call_list.itemcount;
+}
+
 void ci_call_list_set_offset(guint offset)
 {
     if (offset + ci_call_list.linecount > ci_call_list.itemcount) {
@@ -177,6 +182,33 @@ void ci_call_list_scroll(gint count)
     else
         offset = 0;
     ci_call_list_set_offset(offset);
+}
+
+void ci_call_list_scroll_page(gint count)
+{
+    if (count == 0)
+        return;
+    guint offset = ci_call_list.offset;
+    if (count > 0)
+        offset += count * ci_call_list.linecount;
+    else if (ci_call_list.offset > -count * ci_call_list.linecount)
+        offset += count * ci_call_list.linecount;
+    else
+        offset = 0;
+    ci_call_list_set_offset(offset);
+}
+
+void ci_call_list_scroll_head(void)
+{
+    ci_call_list_set_offset(0);
+}
+
+void ci_call_list_scroll_tail(void)
+{
+    if (ci_call_list.linecount < ci_call_list.itemcount)
+        ci_call_list_set_offset(ci_call_list.itemcount - ci_call_list.linecount);
+    else
+        ci_call_list_set_offset(0);
 }
 
 gboolean ci_call_list_get_from_pos(gdouble x, gdouble y, guint *line, guint *column)

@@ -198,6 +198,24 @@ gboolean ci_window_key_press_event(GtkWidget *widget, GdkEventKey *event, gpoint
         case GDK_KEY_Escape:
             ci_window_hide();
             break;
+        case GDK_KEY_Page_Up:
+            ci_call_list_scroll_page(-1);
+            break;
+        case GDK_KEY_Page_Down:
+            ci_call_list_scroll_page(1);
+            break;
+        case GDK_KEY_Up:
+            ci_call_list_scroll(-1);
+            break;
+        case GDK_KEY_Down:
+            ci_call_list_scroll(1);
+            break;
+        case GDK_KEY_Home:
+            ci_call_list_scroll_head();
+            break;
+        case GDK_KEY_End:
+            ci_call_list_scroll_tail();
+            break;
         default:
             break;
     }

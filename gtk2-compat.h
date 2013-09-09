@@ -12,7 +12,13 @@ typedef struct {
     gdouble alpha;
 } GdkRGBA;
 
-#define GDK_KEY_Escape 0xff1b
+#define GDK_KEY_Escape      0xff1b
+#define GDK_KEY_Page_Up     0xff55
+#define GDK_KEY_Page_Down   0xff56
+#define GDK_KEY_Up          0xff52
+#define GDK_KEY_Down        0xff54
+#define GDK_KEY_Home        0xff50
+#define GDK_KEY_End         0xff57
 
 #define gdk_cairo_set_source_rgba(cr,col) cairo_set_source_rgba((cr), (col)->red, (col)->green, (col)->blue, (col)->alpha)
 
