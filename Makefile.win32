@@ -9,9 +9,7 @@ LIBS=-L$(CROSSENV)/usr/lib `$(PKG_CONFIG) --libs glib-2.0 gio-2.0 gtk+-2.0 json-
 
 ci_SRC := $(wildcard *.c)
 ci_OBJ := $(ci_SRC:.c=.o)
-# TODO: cilogo-pixbuf.h only for ci-icon.c
-#ci_HEADERS := $(filter-out cilogo-pixbuf.h, $(wildcard *.h))
-ci_HEADERS := $(wildcard *.h)
+ci_HEADERS := $(filter-out cilogo-pixbuf.h, $(wildcard *.h))
 
 CIVERSION := '$(shell git describe --tags --always)  ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
 
@@ -22,6 +20,7 @@ all: ciclient.exe
 ciclient.exe: $(ci_OBJ) ciclient.o
 	$(CC) $(LDFLAGS) -o $@ $^ ciclient.o $(LIBS)
 
+ci-icon.o: cilogo-pixbuf.h
 %.o: %.c $(ci_HEADERS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 

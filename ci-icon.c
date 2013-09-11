@@ -32,7 +32,8 @@ gboolean ci_icon_create(CIGetMenu get_menu_cb, gpointer userdata)
 
     ci_status_icon = gtk_status_icon_new_from_pixbuf(icon_pixbuf);
 #else
-    ci_status_icon = gtk_status_icon_new_from_file("cilogo.svg");
+/*    ci_status_icon = gtk_status_icon_new_from_file("cilogo.svg");*/
+    ci_status_icon = gtk_status_icon_new_from_icon_name("ciclient");
 #endif
     if (ci_status_icon == NULL)
         return FALSE;
