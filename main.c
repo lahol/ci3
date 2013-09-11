@@ -296,7 +296,7 @@ void handle_add_caller(gpointer userdata)
 void handle_connect(gpointer userdata)
 {
     if ((gboolean)(gulong)userdata) {
-        client_stop();
+        client_disconnect();
     }
     else {
         client_connect();
@@ -432,7 +432,7 @@ int main(int argc, char **argv)
 
     gtk_main();
 
-    client_stop(); /* wait for reply */
+    client_disconnect(); /* wait for reply */
     client_shutdown();
     ci_menu_cleanup();
     ci_display_element_clear_list();

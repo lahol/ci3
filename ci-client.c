@@ -22,9 +22,13 @@ struct {
     GCancellable *cancel;
     guint32 query_guid;
     GList *queries;
+    guint timer_source_id;
+    guint stream_source_id;
+    guint32 auto_reconnect : 1;
 } ciclient;
 
 void client_handle_connection_lost(void);
+void client_stop_timer(void);
 
 guint32 client_gen_guid(void)
 {
@@ -144,7 +148,7 @@ gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnect
         if (msg->msgtype == CI_NET_MSG_LEAVE) {
             g_print("received leave reply\n");
             ciclient.state = CIClientStateInitialized;
-            client_shutdown();
+/*            client_shutdown();*/
         }
         else if (msg->msgtype == CI_NET_MSG_SHUTDOWN) {
             g_print("server shutdown\n");
@@ -166,7 +170,6 @@ gboolean client_incoming_data(GSocket *socket, GIOCondition cond, GSocketConnect
 
 void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer userdata)
 {
-    g_print("client_connected_func: cancel: %p\n", ciclient.cancel);
     if (ciclient.cancel && g_cancellable_is_cancelled(ciclient.cancel)) {
         g_print("client_connected_func: was cancelled\n");
         g_object_unref(ciclient.cancel);
@@ -175,13 +178,16 @@ void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer
     }
     GError *err = NULL;
     ciclient.connection = g_socket_client_connect_to_host_finish(source, result, &err);
-    if (!ciclient.connection) {
+    if (ciclient.connection == NULL) {
         g_printf("no connection: %s\n", err->message);
         g_error_free(err);
         ciclient.state = CIClientStateInitialized;
+        client_handle_connection_lost();
         return;
     }
     g_print("connection established\n");
+
+    client_stop_timer();
     g_tcp_connection_set_graceful_disconnect(G_TCP_CONNECTION(ciclient.connection), TRUE);
 
     GSource *sock_source = NULL;
@@ -193,6 +199,7 @@ void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer
         g_source_set_callback(sock_source, (GSourceFunc)client_incoming_data,
                 ciclient.connection, NULL);
         g_source_attach(sock_source, NULL);
+        ciclient.stream_source_id = g_source_get_id(sock_source);
     }
 
     ciclient.state = CIClientStateConnected;
@@ -240,6 +247,9 @@ void client_set_state_changed_callback(CIClientStateChangedFunc func)
 
 void client_connect(void) {
     g_print("client_connect\n");
+
+    ciclient.auto_reconnect = 1;
+
     if (ciclient.state == CIClientStateConnecting || 
         ciclient.state == CIClientStateConnected) {
         client_stop();
@@ -275,7 +285,11 @@ void client_stop(void)
         cinet_msg_free(msg);
 
         g_print("shutdown socket\n");
-        g_socket_shutdown(g_socket_connection_get_socket(ciclient.connection), TRUE, TRUE, NULL);
+        if (ciclient.stream_source_id) {
+            g_source_remove(ciclient.stream_source_id);
+            ciclient.stream_source_id = 0;
+        }
+        g_io_stream_close(G_IO_STREAM(ciclient.connection), NULL, NULL);
         g_object_unref(ciclient.connection);
         ciclient.connection = NULL;
     }
@@ -285,6 +299,15 @@ void client_stop(void)
 
     if (ciclient.state_changed_cb)
         ciclient.state_changed_cb(CIClientStateDisconnected);
+}
+
+void client_disconnect(void)
+{
+    /* This function only gets called by the user, so don’t reconnect again. */
+    ciclient.auto_reconnect = 0;
+
+    client_stop_timer();
+    client_stop();
 }
 
 gboolean client_try_connect_func(gpointer userdata)
@@ -298,6 +321,7 @@ gboolean client_try_connect_func(gpointer userdata)
         case CIClientStateConnected:
             /* connected, remove timer */
             g_print("client_try_connect: connected\n");
+            ciclient.timer_source_id = 0;
             return FALSE;
         case CIClientStateDisconnected:
         case CIClientStateInitialized:
@@ -312,7 +336,8 @@ gboolean client_try_connect_func(gpointer userdata)
 
 void client_handle_connection_lost(void)
 {
-    g_print("client_handle_connection_lost\n");
+    if (ciclient.timer_source_id || ciclient.auto_reconnect == 0)
+        return;
 
     client_stop();
     gint retry_interval = 0;
@@ -320,7 +345,16 @@ void client_handle_connection_lost(void)
 
     g_printf("retry interval: %d\n", retry_interval);
     if (retry_interval > 0) {
-        g_timeout_add_seconds(retry_interval, (GSourceFunc)client_try_connect_func, NULL);
+        ciclient.timer_source_id = g_timeout_add_seconds(retry_interval,
+                (GSourceFunc)client_try_connect_func, NULL);
+    }
+}
+
+void client_stop_timer(void)
+{
+    if (ciclient.timer_source_id) {
+        g_source_remove(ciclient.timer_source_id);
+        ciclient.timer_source_id = 0;
     }
 }
 
@@ -328,6 +362,7 @@ void client_shutdown(void)
 {
     g_print("client_shutdown\n");
     if (ciclient.state == CIClientStateInitialized) {
+        client_stop_timer();
         g_free(ciclient.host);
         ciclient.state = CIClientStateUnknown;
         g_list_free_full(ciclient.queries, g_free);
