@@ -14,6 +14,7 @@
 #include <memory.h>
 #include "gtk2-compat.h"
 #include "ci-dialogs.h"
+#include "ci-filter.h"
 
 #ifdef USELIBNOTIFY
 #include "ci-notify.h"
@@ -90,6 +91,9 @@ gchar *ci_format_call_info(gchar conversion_symbol, CICallInfo *data)
 
 void present(CINetMsgType type, CICallInfo *call_info, gchar *msgid)
 {
+    if (!ci_filter_msn_allowed(call_info->msn))
+        return;
+
     gchar *output = NULL;
     ci_config_get("general:output", &output);
 
@@ -444,6 +448,7 @@ void init_display(void)
 void init_config(void)
 {
     ci_config_add_setting("general", "output", CIConfigTypeString, (gpointer)"default");
+    ci_config_add_setting("general", "msn-filter", CIConfigTypeString, NULL);
 #ifdef USELIBNOTIFY
     ci_config_add_setting("libnotify", "timeout", CIConfigTypeInt, GINT_TO_POINTER(-1));
 #endif
@@ -471,6 +476,11 @@ int main(int argc, char **argv)
     if (!ci_config_load()) {
         g_printf("Failed to load configuration. Using defaults.\n");
     }
+
+    gchar *msnlist = NULL;
+    ci_config_get("general:msn-filter", (gpointer)&msnlist);
+    ci_filter_msn_set(msnlist);
+    g_free(msnlist);
     
     client_set_state_changed_callback(handle_client_state_change);
     client_start(msg_callback);
