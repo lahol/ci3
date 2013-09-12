@@ -417,9 +417,29 @@ void init_display(void)
     ci_window_init();
 }
 
+void init_config(void)
+{
+    ci_config_add_setting("general", "output", CIConfigTypeString, (gpointer)"default");
+    
+    ci_config_add_setting("client", "host", CIConfigTypeString, (gpointer)"localhost");
+    ci_config_add_setting("client", "port", CIConfigTypeUint, GUINT_TO_POINTER(63690));
+    ci_config_add_setting("client", "retry-interval", CIConfigTypeInt, GINT_TO_POINTER(10));
+    ci_config_add_setting("client", "user", CIConfigTypeInt, GINT_TO_POINTER(0));
+
+    ci_config_add_setting("window", "x", CIConfigTypeInt, GINT_TO_POINTER(10));
+    ci_config_add_setting("window", "y", CIConfigTypeInt, GINT_TO_POINTER(60));
+    ci_config_add_setting("window", "width", CIConfigTypeInt, GINT_TO_POINTER(200));
+    ci_config_add_setting("window", "height", CIConfigTypeInt, GINT_TO_POINTER(100));
+
+    GdkRGBA col = { 1.0, 1.0, 1.0, 1.0 };
+    ci_config_add_setting("window", "background", CIConfigTypeColor, (gpointer)&col);
+}
+
 int main(int argc, char **argv)
 {
     gtk_init(&argc, &argv);
+
+    init_config();
 
     if (!ci_config_load()) {
         g_printf("Failed to load configuration. Using defaults.\n");
@@ -457,6 +477,7 @@ int main(int argc, char **argv)
     ci_menu_cleanup();
     ci_display_element_clear_list();
     ci_call_list_cleanup();
+    ci_config_cleanup();
 
     return 0;
 }
