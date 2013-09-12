@@ -4,18 +4,28 @@ LIBS=`pkg-config --libs glib-2.0 gio-2.0 gtk+-3.0 json-glib-1.0` -lcinet
 
 CIVERSION := '$(shell git describe --tags --always)  ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
 
-PREFIX=/usr
-ICONDIR=$(PREFIX)/share/icons/hicolor
+APPNAME := ciclient
+PREFIX := /usr
+ICONDIR = $(PREFIX)/share/icons/hicolor
+
+ci_SRC := $(filter-out ci-notify.c, $(wildcard *.c))
+ci_OBJ := $(ci_SRC:.c=.o)
+ci_HEADERS := $(filter-out cilogo-pixbuf.h ci-notify.h, $(wildcard *.h))
 
 CFLAGS += -DCIVERSION=\"${CIVERSION}\"
+CFLAGS += -DAPPNAME=\"${APPNAME}\"
 
-ci_SRC := $(wildcard *.c)
-ci_OBJ := $(ci_SRC:.c=.o)
-ci_HEADERS := $(filter-out cilogo-pixbuf.h, $(wildcard *.h))
+ifndef WITHOUTLIBNOTIFY
+	CFLAGS += -DUSELIBNOTIFY
+	ci_SRC += ci-notify.c
+	ci_OBJ += ci-notify.o
+	ci_HEADERS += ci-notify.h
+	LIBS += -lnotify
+endif
 
-all: ciclient
+all: $(APPNAME)
 
-ciclient: $(ci_OBJ)
+$(APPNAME): $(ci_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 ci-icon.o: cilogo-pixbuf.h

@@ -15,6 +15,10 @@
 #include "gtk2-compat.h"
 #include "ci-dialogs.h"
 
+#ifdef USELIBNOTIFY
+#include "ci-notify.h"
+#endif
+
 CICallInfo last_call;
 gboolean preserve_last_caller_name = FALSE;
 gboolean last_call_valid =  FALSE;
@@ -84,6 +88,24 @@ gchar *ci_format_call_info(gchar conversion_symbol, CICallInfo *data)
     return NULL;
 }
 
+void present(CINetMsgType type, CICallInfo *call_info, gchar *msgid)
+{
+    gchar *output = NULL;
+    ci_config_get("general:output", &output);
+
+    if (output == NULL || g_strcmp0(output, "default") == 0) {
+        ci_window_show(FALSE, FALSE);
+    }
+#ifdef USELIBNOTIFY
+    else if (g_strcmp0(output, "libnotify") == 0) {
+        ci_notify_present(type, call_info, msgid);
+    }
+#endif
+    else {
+        g_printf("Unknown output: \"%s\"\n", output);
+    }
+}
+
 void msg_callback(CINetMsg *msg)
 {
     g_printf("msg callback: guid: %u\n", msg->guid);
@@ -113,7 +135,9 @@ void msg_callback(CINetMsg *msg)
 
         update_last_call_display();
         ci_window_update();
-        ci_window_show(((CINetMsgMultipart*)msg)->stage == MultipartStageInit ? TRUE : FALSE, FALSE);
+
+        present(msg->msgtype, &last_call, ((CINetMsgMultipart*)msg)->msgid);
+
         handle_refresh();
 
         if (((CINetMsgMultipart*)msg)->stage == MultipartStageInit &&
@@ -420,6 +444,9 @@ void init_display(void)
 void init_config(void)
 {
     ci_config_add_setting("general", "output", CIConfigTypeString, (gpointer)"default");
+#ifdef USELIBNOTIFY
+    ci_config_add_setting("libnotify", "timeout", CIConfigTypeInt, GINT_TO_POINTER(-1));
+#endif
     
     ci_config_add_setting("client", "host", CIConfigTypeString, (gpointer)"localhost");
     ci_config_add_setting("client", "port", CIConfigTypeUint, GUINT_TO_POINTER(63690));
@@ -478,6 +505,9 @@ int main(int argc, char **argv)
     ci_display_element_clear_list();
     ci_call_list_cleanup();
     ci_config_cleanup();
+#ifdef USELIBNOTIFY
+    ci_notify_cleanup();
+#endif
 
     return 0;
 }
