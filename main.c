@@ -1,6 +1,6 @@
 #include <glib.h>
 #include <gio/gio.h>
-#include <glib/gprintf.h>
+#include "ci-logging.h"
 #include "ci-client.h"
 #include "ci-icon.h"
 #include "ci-menu.h"
@@ -106,17 +106,17 @@ void present(CINetMsgType type, CICallInfo *call_info, gchar *msgid)
     }
 #endif
     else {
-        g_printf("Unknown output: \"%s\"\n", output);
+        LOG("Unknown output: \"%s\"\n", output);
     }
 }
 
 void msg_callback(CINetMsg *msg)
 {
-    g_printf("msg callback: guid: %u\n", msg->guid);
+    DLOG("msg callback: guid: %u\n", msg->guid);
     gchar *bkup_name = NULL;
 
     if (msg->msgtype == CI_NET_MSG_VERSION) {
-        g_printf("server version: %d.%d.%d (%s)\n", 
+        LOG("server version: %d.%d.%d (%s)\n", 
                 ((CINetMsgVersion*)msg)->major,
                 ((CINetMsgVersion*)msg)->minor,
                 ((CINetMsgVersion*)msg)->patch,
@@ -150,10 +150,10 @@ void msg_callback(CINetMsg *msg)
            query_last_call_caller_info();
     }
     else if (msg->msgtype == CI_NET_MSG_DB_NUM_CALLS) {
-        g_printf("num calls: %d\n", ((CINetMsgDbNumCalls*)msg)->count);
+        DLOG("num calls: %d\n", ((CINetMsgDbNumCalls*)msg)->count);
     }
     else if (msg->msgtype == CI_NET_MSG_DB_CALL_LIST) {
-        g_printf("msg call list\n");
+        DLOG("msg call list\n");
     }
 }
 
@@ -229,7 +229,7 @@ void handle_edit_element(gpointer userdata)
 
 void handle_add(gpointer userdata)
 {
-    g_printf("handle add\n");
+    DLOG("handle add\n");
     if (userdata == NULL)
         return;
     CIDisplayContext *ctx = (CIDisplayContext*)userdata;
@@ -241,7 +241,7 @@ void handle_add(gpointer userdata)
 
         if (ci_window_edit_element_dialog(&format_string)) {
             ci_display_element_set_format(el, format_string);
-            g_printf("element set format: %s\n", format_string);
+            DLOG("element set format: %s\n", format_string);
             ci_display_element_set_pos(el, (gdouble)GPOINTER_TO_INT(ctx->data[0]),
                                            (gdouble)GPOINTER_TO_INT(ctx->data[1]));
             update_last_call_display();
@@ -255,7 +255,7 @@ void handle_add(gpointer userdata)
 
         if (ci_window_edit_element_dialog(&format_string)) {
             ci_call_list_set_column_format(col, format_string);
-            g_printf("column set format: %s\n", format_string);
+            DLOG("column set format: %s\n", format_string);
             ci_call_list_update_lines();
         }
         else {
@@ -338,7 +338,7 @@ void handle_save_config(void)
 
 void handle_add_caller(gpointer userdata)
 {
-    g_print("add caller\n");
+    DLOG("add caller\n");
     CIDisplayContext *ctx = (CIDisplayContext*)userdata;
 
     CICallInfo *selection = NULL;
@@ -362,12 +362,12 @@ void handle_add_caller(gpointer userdata)
     if (selection != NULL &&
             selection->completenumber != NULL &&
             selection->completenumber[0] != 0) {
-        g_printf("add caller: %s %s\n", selection->completenumber, selection->name);
+        DLOG("add caller: %s %s\n", selection->completenumber, selection->name);
         cinet_caller_info_set_value(&ci, "number", selection->completenumber);
         cinet_caller_info_set_value(&ci, "name", selection->name);
 
         if (ci_dialogs_add_caller(&ci)) {
-            g_print("query: %d, %s -> %s\n", user, ci.number, ci.name);
+            DLOG("query: %d, %s -> %s\n", user, ci.number, ci.name);
             client_query(CIClientQueryAddCaller, refresh_after_done, NULL,
                     "user", GINT_TO_POINTER(user),
                     "number", ci.number,
@@ -449,6 +449,7 @@ void init_config(void)
 {
     ci_config_add_setting("general", "output", CIConfigTypeString, (gpointer)"default");
     ci_config_add_setting("general", "msn-filter", CIConfigTypeString, NULL);
+    ci_config_add_setting("general", "log-file", CIConfigTypeString, NULL);
 #ifdef USELIBNOTIFY
     ci_config_add_setting("libnotify", "timeout", CIConfigTypeInt, GINT_TO_POINTER(-1));
 #endif
@@ -474,7 +475,7 @@ int main(int argc, char **argv)
     init_config();
 
     if (!ci_config_load()) {
-        g_printf("Failed to load configuration. Using defaults.\n");
+        LOG("Failed to load configuration. Using defaults.\n");
     }
 
     gchar *msnlist = NULL;
@@ -486,7 +487,7 @@ int main(int argc, char **argv)
     client_start(msg_callback);
 
     if (!ci_icon_create(ci_menu_popup_menu, NULL))
-        g_printf("failed to create icon\n");
+        LOG("failed to create icon\n");
 
     CIMenuItemCallbacks menu_cb = {
         handle_quit,

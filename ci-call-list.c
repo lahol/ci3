@@ -1,6 +1,6 @@
 #include "ci-call-list.h"
 #include <cinet.h>
-#include <glib/gprintf.h>
+#include "ci-logging.h"
 #include <memory.h>
 #include "ci-properties.h"
 

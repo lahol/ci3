@@ -1,5 +1,5 @@
 #include "ci-filter.h"
-#include <glib/gprintf.h>
+#include "ci-logging.h"
 
 GList *allowed_msn = NULL;
 
@@ -30,7 +30,7 @@ void ci_filter_msn_set(const gchar *filter_string)
                 !g_ascii_isspace(tmp[offset]) &&
                 tmp[offset] != ',' && tmp[offset] != ':' &&
                 tmp[offset] != ';' && tmp[offset] != '|') {
-            g_printf("msnlist: illegal character: %c\n", tmp[offset]);
+            LOG("msnlist: illegal character: %c\n", tmp[offset]);
             g_free(tmp);
             return;
         }

@@ -1,7 +1,7 @@
 #include "ci-notify.h"
 #include <libnotify/notify.h>
 #include <string.h>
-#include <glib/gprintf.h>
+#include "ci-logging.h"
 #include "ci-config.h"
 
 struct CINotifyEvent {
@@ -35,9 +35,9 @@ void ci_notify_init(void)
 
     GList *caps = notify_get_server_caps();
     GList *cap;
-    g_print("libnotify server caps:\n");
+    LOG("libnotify server caps:\n");
     for (cap = caps; cap != NULL; cap = g_list_next(cap)) {
-        g_printf(" %s\n", (gchar *)cap->data);
+        LOG(" %s\n", (gchar *)cap->data);
         if (g_strcmp0((gchar *)cap->data, "body-markup") == 0)
             server_caps.body_markup = 1;
         else if (g_strcmp0((gchar *)cap->data, "body") == 0)
@@ -55,7 +55,7 @@ void ci_notify_present(CINetMsgType type, CICallInfo *call_info, gchar *msgid)
 
     struct CINotifyEvent *event = ci_notify_get_event(NULL, msgid);
     if (event == NULL) {
-        g_printf("make new event\n");
+        DLOG("make new event\n");
         event = ci_notify_event_new(msgid);
     }
 
@@ -87,11 +87,11 @@ void ci_notify_present(CINetMsgType type, CICallInfo *call_info, gchar *msgid)
     }
 
     if (event->notification) {
-        g_printf("update notification %s\n", msgid);
+        DLOG("update notification %s\n", msgid);
         notify_notification_update(event->notification, summary, body, NULL);
     }
     else {
-        g_printf("new notification %s\n", msgid);
+        DLOG("new notification %s\n", msgid);
         event->notification = notify_notification_new(summary, body, NULL);
     }
 
@@ -192,6 +192,6 @@ void ci_notify_notification_closed(NotifyNotification *notification, gpointer us
      *  4 – Undefined/reserved reasons.
      */
 
-    g_printf("notification closed\n");
+    DLOG("notification closed\n");
     ci_notify_remove_event(notification, NULL);
 }

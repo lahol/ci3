@@ -1,5 +1,6 @@
 #include "ci-config.h"
 #include <json-glib/json-glib.h>
+#include "ci-logging.h"
 #include <glib/gprintf.h>
 #include <gtk/gtk.h>
 #include "ci-display-elements.h"
@@ -234,7 +235,7 @@ gboolean ci_config_load(void)
     ci_config_set_defaults();
 
     if (!json_parser_load_from_file(parser, filename, &err)) {
-        g_printf("load from file failed: %s\n", err->message);
+        LOG("load from file failed: %s\n", err->message);
         g_error_free(err);
         result = FALSE;
     }
@@ -265,7 +266,7 @@ gboolean ci_config_save(void)
     json_generator_set_indent(gen, 4);
 
     if (!json_generator_to_file(gen, filename, &err)) {
-        g_printf("save to file failed: %s\n", err->message);
+        LOG("save to file failed: %s\n", err->message);
         g_error_free(err);
         result = FALSE;
     }

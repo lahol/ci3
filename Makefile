@@ -1,6 +1,6 @@
-CC=gcc
-CFLAGS=-Wall -g `pkg-config --cflags glib-2.0 gio-2.0 gtk+-3.0 json-glib-1.0`
-LIBS=`pkg-config --libs glib-2.0 gio-2.0 gtk+-3.0 json-glib-1.0` -lcinet
+CC = gcc
+CFLAGS = -Wall -g `pkg-config --cflags glib-2.0 gio-2.0 gtk+-3.0 json-glib-1.0`
+LIBS += `pkg-config --libs glib-2.0 gio-2.0 gtk+-3.0 json-glib-1.0` -lcinet
 
 CIVERSION := '$(shell git describe --tags --always)  ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
 
@@ -21,6 +21,10 @@ ifndef WITHOUTLIBNOTIFY
 	ci_OBJ += ci-notify.o
 	ci_HEADERS += ci-notify.h
 	LIBS += -lnotify
+endif
+
+ifdef DEBUG
+	CFLAGS += -DDEBUG
 endif
 
 all: $(APPNAME)

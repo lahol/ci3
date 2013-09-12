@@ -1,7 +1,6 @@
 #include "ci-window.h"
 #include "ci-menu.h"
 #include "ci-display-elements.h"
-#include <glib/gprintf.h>
 #include <memory.h>
 #include "ci-config.h"
 #include "ci-call-list.h"
