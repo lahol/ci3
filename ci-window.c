@@ -59,7 +59,6 @@ gboolean ci_window_expose_event(GtkWidget *widget, GdkEvent *event, gpointer use
 
 gboolean ci_window_focus(GtkWidget *widget, GtkDirectionType dir, gpointer userdata)
 {
-    g_printf("focus event\n");
 /*    gtk_window_set_urgency_hint(GTK_WINDOW(window), FALSE);*/
     return FALSE;
 }

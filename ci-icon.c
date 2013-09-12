@@ -19,7 +19,12 @@ void ci_icon_popup_menu(GtkStatusIcon *icon, guint button, guint activate_time, 
 
 void ci_icon_activate(GtkStatusIcon *icon, gpointer userdata)
 {
-    ci_window_show(FALSE, TRUE);
+    gboolean visible;
+    ci_property_get("window-visible", &visible);
+    if (visible)
+        ci_window_hide();
+    else
+        ci_window_show(FALSE, TRUE);
 }
 
 gboolean ci_icon_create(CIGetMenu get_menu_cb, gpointer userdata)
