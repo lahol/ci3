@@ -95,6 +95,9 @@ void ci_notify_present(CINetMsgType type, CICallInfo *call_info, gchar *msgid)
         event->notification = notify_notification_new(summary, body, NULL);
     }
 
+    g_free(summary);
+    g_free(body);
+
     gint timeout = NOTIFY_EXPIRES_DEFAULT; /* default: -1, never: 0 */
     ci_config_get("libnotify:timeout", &timeout);
 
