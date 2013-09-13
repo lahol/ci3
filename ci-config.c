@@ -46,6 +46,7 @@ void ci_config_set_defaults(void)
             switch (setting->type) {
                 case CIConfigTypeInt:
                 case CIConfigTypeUint:
+                case CIConfigTypeBoolean:
                     setting->value = setting->default_value;
                     break;
                 case CIConfigTypeString:
@@ -254,6 +255,9 @@ gboolean ci_config_variable_get(struct CIConfigVariable *var, gpointer value, gb
         case CIConfigTypeUint:
             *((guint *)value) = GPOINTER_TO_UINT((get_default ? var->default_value : var->value));
             break;
+        case CIConfigTypeBoolean:
+            *((gboolean *)value) = GPOINTER_TO_INT((get_default ? var->default_value : var->value));
+            break;
         case CIConfigTypeString:
             *((gchar **)value) = g_strdup((gchar *)(get_default ? var->default_value : var->value));
             break;
@@ -342,6 +346,7 @@ gboolean ci_config_variable_set(struct CIConfigVariable *var, gpointer value)
     switch (var->type) {
         case CIConfigTypeInt:
         case CIConfigTypeUint:
+        case CIConfigTypeBoolean:
             var->value = value;
             break;
         case CIConfigTypeString:
@@ -495,6 +500,10 @@ gboolean ci_config_load_group(JsonNode *node, struct CIConfigGroup *group)
                 case CIConfigTypeUint:
                     ci_config_variable_set(setting,
                             GUINT_TO_POINTER((guint)json_object_get_int_member(obj, setting->key)));
+                    break;
+                case CIConfigTypeBoolean:
+                    ci_config_variable_set(setting,
+                            GINT_TO_POINTER(json_object_get_boolean_member(obj, setting->key)));
                     break;
                 case CIConfigTypeString:
                     ci_config_variable_set(setting,
@@ -674,6 +683,7 @@ void ci_config_save_group(JsonBuilder *builder, struct CIConfigGroup *group)
 
     gint ival;
     guint uival;
+    gboolean bval;
     gchar *strval;
     GdkRGBA col;
 
@@ -695,6 +705,10 @@ void ci_config_save_group(JsonBuilder *builder, struct CIConfigGroup *group)
             case CIConfigTypeUint:
                 ci_config_variable_get(setting, (gpointer)&uival, FALSE);
                 json_builder_add_int_value(builder, uival);
+                break;
+            case CIConfigTypeBoolean:
+                ci_config_variable_get(setting, (gpointer)&bval, FALSE);
+                json_builder_add_boolean_value(builder, bval);
                 break;
             case CIConfigTypeString:
                 strval = NULL;

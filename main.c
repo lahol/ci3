@@ -465,6 +465,7 @@ void init_config(void)
     ci_config_add_setting("window", "y", CIConfigTypeInt, GINT_TO_POINTER(60));
     ci_config_add_setting("window", "width", CIConfigTypeInt, GINT_TO_POINTER(200));
     ci_config_add_setting("window", "height", CIConfigTypeInt, GINT_TO_POINTER(100));
+    ci_config_add_setting("window", "set-urgency-hint", CIConfigTypeBoolean, GINT_TO_POINTER(FALSE));
 
     GdkRGBA col = { 1.0, 1.0, 1.0, 1.0 };
     ci_config_add_setting("window", "background", CIConfigTypeColor, (gpointer)&col);

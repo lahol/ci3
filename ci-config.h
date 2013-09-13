@@ -8,7 +8,8 @@ typedef enum {
     CIConfigTypeInt,
     CIConfigTypeUint,
     CIConfigTypeString,
-    CIConfigTypeColor
+    CIConfigTypeColor,
+    CIConfigTypeBoolean
 } CIConfigType;
 
 typedef struct CIConfigVariable CIConfigSetting;
