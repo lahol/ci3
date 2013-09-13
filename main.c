@@ -98,7 +98,8 @@ void present(CINetMsgType type, CICallInfo *call_info, gchar *msgid)
     ci_config_get("general:output", &output);
 
     if (output == NULL || g_strcmp0(output, "default") == 0) {
-        ci_window_show(FALSE, FALSE);
+        if (type == CI_NET_MSG_EVENT_RING)
+            ci_window_show(FALSE, FALSE);
     }
 #ifdef USELIBNOTIFY
     else if (g_strcmp0(output, "libnotify") == 0) {
@@ -114,6 +115,7 @@ void msg_callback(CINetMsg *msg)
 {
     DLOG("msg callback: guid: %u\n", msg->guid);
     gchar *bkup_name = NULL;
+    CICallInfo ci;
 
     if (msg->msgtype == CI_NET_MSG_VERSION) {
         LOG("server version: %d.%d.%d (%s)\n", 
@@ -148,6 +150,12 @@ void msg_callback(CINetMsg *msg)
                 last_call.completenumber != NULL &&
                 last_call.completenumber[0] != 0)
            query_last_call_caller_info();
+    }
+    else if (msg->msgtype == CI_NET_MSG_EVENT_CALL) {
+        memset(&ci, 0, sizeof(CICallInfo));
+        cinet_call_info_copy(&ci, &((CINetMsgEventCall*)msg)->callinfo);
+
+        present(msg->msgtype, &ci, NULL);
     }
     else if (msg->msgtype == CI_NET_MSG_DB_NUM_CALLS) {
         DLOG("num calls: %d\n", ((CINetMsgDbNumCalls*)msg)->count);

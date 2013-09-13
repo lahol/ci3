@@ -133,9 +133,11 @@ GList *ci_notify_get_event_link(NotifyNotification *notification, gchar *msgid)
     if (notification != NULL)
         link = g_list_find_custom(ci_notify_notifications, (gpointer)notification,
                 (GCompareFunc)ci_notify_event_compare_notification);
-    else
+    else if (msgid != NULL && msgid[0] != 0)
         link = g_list_find_custom(ci_notify_notifications, (gpointer)msgid,
                 (GCompareFunc)ci_notify_event_compare_msgid);
+    else
+        return NULL;
 
     return link;
 }
