@@ -19,8 +19,9 @@ void ci_config_cleanup(void);
 GList *ci_config_enum_settings(void); /* [element-type: gchar*, "group:key" */
 CIConfigSetting *ci_config_get_setting(const gchar *key);
 CIConfigType ci_config_setting_get_type(CIConfigSetting *setting);
-gpointer ci_config_setting_get_value(CIConfigSetting *setting);
-gpointer ci_conifg_setting_get_default_value(CIConfigSetting *setting);
+
+gboolean ci_config_setting_get_value(CIConfigSetting *setting, gpointer value);
+gboolean ci_conifg_setting_get_default_value(CIConfigSetting *setting, gpointer value);
 
 gboolean ci_config_load(void);
 gboolean ci_config_save(void);

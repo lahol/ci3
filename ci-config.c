@@ -8,21 +8,6 @@
 #include <memory.h>
 #include "gtk2-compat.h"
 
-/*struct CIConfig {
-    gchar *general_output;
-
-    gchar *client_host;
-    guint client_port;
-    gint client_retry_interval;
-    gint client_user;
-
-    gint window_x;
-    gint window_y;
-    gint window_width;
-    gint window_height;
-    GdkRGBA window_background;
-} ci_config;*/
-
 struct CIConfigVariable {
     CIConfigType type;
     gchar *key;
@@ -278,20 +263,20 @@ gboolean ci_config_save(void)
     return result;
 }
 
-gboolean ci_config_variable_get(struct CIConfigVariable *var, gpointer value)
+gboolean ci_config_variable_get(struct CIConfigVariable *var, gpointer value, gboolean get_default)
 {
     switch (var->type) {
         case CIConfigTypeInt:
-            *((gint *)value) = GPOINTER_TO_INT(var->value);
+            *((gint *)value) = GPOINTER_TO_INT((get_default ? var->default_value : var->value));
             break;
         case CIConfigTypeUint:
-            *((guint *)value) = GPOINTER_TO_UINT(var->value);
+            *((guint *)value) = GPOINTER_TO_UINT((get_default ? var->default_value : var->value));
             break;
         case CIConfigTypeString:
-            *((gchar **)value) = g_strdup((gchar *)var->value);
+            *((gchar **)value) = g_strdup((gchar *)(get_default ? var->default_value : var->value));
             break;
         case CIConfigTypeColor:
-            memcpy(value, var->value, sizeof(GdkRGBA));
+            memcpy(value, (get_default ? var->default_value : var->value), sizeof(GdkRGBA));
             break;
         default:
             return FALSE;
@@ -320,7 +305,7 @@ gboolean ci_config_get(const gchar *key, gpointer value)
 
     g_strfreev(split);
 
-    return ci_config_variable_get(setting, value);
+    return ci_config_variable_get(setting, value, FALSE);
 
 out:
     g_strfreev(split);
@@ -371,6 +356,57 @@ gboolean ci_config_set(const gchar *key, gpointer value)
 out:
     g_strfreev(split);
     return FALSE;
+}
+
+/* [element-type: gchar*, "group:key" */
+GList *ci_config_enum_settings(void)
+{
+    GList *settings = NULL;
+    GList *group, *var;
+    for (group = ci_config_groups; group != NULL; group = g_list_next(group)) {
+        for (var = (GList*)((struct CIConfigGroup*)group->data)->variables;
+                var != NULL; var = g_list_next(var)) {
+            settings = g_list_insert_sorted(settings,
+                    g_strjoin(":",
+                        ((struct CIConfigGroup*)group->data)->groupname,
+                        ((struct CIConfigVariable*)var->data)->key,
+                        NULL), (GCompareFunc)g_strcmp0);
+        }
+    }
+
+    return settings;
+}
+
+CIConfigSetting *ci_config_get_setting(const gchar *key)
+{
+    gchar **split = g_strsplit(key, ":", 2);
+    if (split[0] == NULL || split[1] == NULL) {
+        g_strfreev(split);
+        return NULL;
+    }
+
+    struct CIConfigVariable *result = ci_config_get_variable(split[0], split[1], FALSE);
+
+    g_strfreev(split);
+
+    return result;
+}
+
+CIConfigType ci_config_setting_get_type(CIConfigSetting *setting)
+{
+    if (setting == NULL)
+        return CIConfigTypeInvalid;
+    return setting->type;
+}
+
+gboolean ci_config_setting_get_value(CIConfigSetting *setting, gpointer value)
+{
+    return ci_config_variable_get(setting, value, FALSE);
+}
+
+gboolean ci_conifg_setting_get_default_value(CIConfigSetting *setting, gpointer value)
+{
+    return ci_config_variable_get(setting, value, TRUE);
 }
 
 gboolean ci_config_load_root(JsonNode *node)
@@ -623,21 +659,21 @@ void ci_config_save_group(JsonBuilder *builder, struct CIConfigGroup *group)
         json_builder_set_member_name(builder, setting->key);
         switch (setting->type) {
             case CIConfigTypeInt:
-                ci_config_variable_get(setting, (gpointer)&ival);
+                ci_config_variable_get(setting, (gpointer)&ival, FALSE);
                 json_builder_add_int_value(builder, ival);
                 break;
             case CIConfigTypeUint:
-                ci_config_variable_get(setting, (gpointer)&uival);
+                ci_config_variable_get(setting, (gpointer)&uival, FALSE);
                 json_builder_add_int_value(builder, uival);
                 break;
             case CIConfigTypeString:
                 strval = NULL;
-                ci_config_variable_get(setting, (gpointer)&strval);
+                ci_config_variable_get(setting, (gpointer)&strval, FALSE);
                 json_builder_add_string_value(builder, strval);
                 g_free(strval);
                 break;
             case CIConfigTypeColor:
-                ci_config_variable_get(setting, (gpointer)&col);
+                ci_config_variable_get(setting, (gpointer)&col, FALSE);
                 strval = ci_color_to_string(&col);
                 json_builder_add_string_value(builder, strval);
                 g_free(strval);
