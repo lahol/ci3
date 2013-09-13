@@ -10,8 +10,7 @@ gboolean initialized = FALSE;
 void ci_log(gchar *format, ...)
 {
     if (!initialized) {
-        gchar *fname = NULL;
-        ci_config_get("general:log-file", (gpointer)&fname);
+        gchar *fname = ci_config_get_string("general:log-file");
         if (fname)
             strcpy(filename, fname);
         else

@@ -6,5 +6,6 @@
 typedef gboolean (*CIPropertyGetFunc)(const gchar *, gpointer);
 
 extern gboolean ci_property_get(const gchar *key, gpointer value);
+gboolean ci_property_get_boolean(const gchar *key);
 
 #endif

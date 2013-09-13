@@ -224,14 +224,10 @@ void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer
 void client_start(CIMsgCallback callback)
 {
     DLOG("client_start\n");
-    gchar *host = NULL;
-    guint port = 0;
-    ci_config_get("client:host", (gpointer)&host);
-    ci_config_get("client:port", (gpointer)&port);
 
     ciclient.client = g_socket_client_new();
-    ciclient.host = g_strdup(host);
-    ciclient.port = port;
+    ciclient.host = ci_config_get_string("client:host");
+    ciclient.port = ci_config_get_uint("client:port");
     ciclient.callback = callback;
     ciclient.connection = NULL;
 
@@ -340,8 +336,7 @@ void client_handle_connection_lost(void)
         return;
 
     client_stop();
-    gint retry_interval = 0;
-    ci_config_get("client:retry-interval", &retry_interval);
+    gint retry_interval = ci_config_get_int("client:retry-interval");
 
     DLOG("retry interval: %d\n", retry_interval);
     if (retry_interval > 0) {

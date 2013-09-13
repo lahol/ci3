@@ -94,8 +94,7 @@ void present(CINetMsgType type, CICallInfo *call_info, gchar *msgid)
     if (!ci_filter_msn_allowed(call_info->msn))
         return;
 
-    gchar *output = NULL;
-    ci_config_get("general:output", &output);
+    gchar *output = ci_config_get_string("general:output");
 
     if (output == NULL || g_strcmp0(output, "default") == 0) {
         if (type == CI_NET_MSG_EVENT_RING)
@@ -180,8 +179,7 @@ void handle_last_caller_info_reply(CINetMsg *msg, gpointer userdata)
 
 void query_last_call_caller_info(void)
 {
-    gint user;
-    ci_config_get("client:user", &user);
+    gint user = ci_config_get_int("client:user");
     client_query(CIClientQueryGetCaller,
             (CIQueryMsgCallback)handle_last_caller_info_reply, NULL,
             "user", GINT_TO_POINTER(user),
@@ -350,9 +348,7 @@ void handle_add_caller(gpointer userdata)
     CIDisplayContext *ctx = (CIDisplayContext*)userdata;
 
     CICallInfo *selection = NULL;
-    gint user;
-
-    ci_config_get("client:user", &user);
+    gint user = ci_config_get_int("client:user");
 
     if (ctx->type == CIContextTypeList) {
         selection = ci_call_list_get_call(GPOINTER_TO_UINT(ctx->data[0]));
@@ -423,9 +419,7 @@ void update_list_query_callback(CINetMsg *msg, gpointer userdata)
 
 void handle_list_reload(gint offset, gint count)
 {
-    gint user;
-    ci_config_get("client:user", &user);
-
+    gint user = ci_config_get_int("client:user"); 
     client_query(CIClientQueryCallList, update_list_query_callback, NULL,
             "offset", GINT_TO_POINTER(offset),
             "count", GINT_TO_POINTER(count),
@@ -486,8 +480,7 @@ int main(int argc, char **argv)
         LOG("Failed to load configuration. Using defaults.\n");
     }
 
-    gchar *msnlist = NULL;
-    ci_config_get("general:msn-filter", (gpointer)&msnlist);
+    gchar *msnlist = ci_config_get_string("general:msn-filter");
     ci_filter_msn_set(msnlist);
     g_free(msnlist);
     

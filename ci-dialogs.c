@@ -74,9 +74,9 @@ gboolean ci_dialogs_add_caller(CICallerInfo *caller)
 
 void ci_dialogs_about(void)
 {
-    gchar *cfgfile = NULL, *comment = NULL;
+    gchar *cfgfile, *comment = NULL;
 
-    ci_config_get("config-file", &cfgfile);
+    cfgfile = ci_config_get_string("config-file");
     comment = g_strconcat("Configuration file: ", cfgfile, NULL);
     gchar *authors[] = { "Holger Langenau", NULL };
 #ifndef CIVERSION

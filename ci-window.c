@@ -75,10 +75,10 @@ gboolean ci_window_configure_event(GtkWidget *widget, GdkEventConfigure *event, 
     win_w = event->width;
     win_h = event->height;
 
-    ci_config_set("window:x", GINT_TO_POINTER(win_x));
-    ci_config_set("window:y", GINT_TO_POINTER(win_y));
-    ci_config_set("window:width", GINT_TO_POINTER(win_w));
-    ci_config_set("window:height", GINT_TO_POINTER(win_h));
+    ci_config_set_int("window:x", win_x);
+    ci_config_set_int("window:y", win_y);
+    ci_config_set_int("window:width", win_w);
+    ci_config_set_int("window:height", win_h);
 
     ci_window_update();
     return FALSE;
@@ -262,10 +262,10 @@ gboolean ci_window_init(void)
     if (window == NULL)
         return FALSE;
 
-    ci_config_get("window:x", (gpointer)&win_x);
-    ci_config_get("window:y", (gpointer)&win_y);
-    ci_config_get("window:width", (gpointer)&win_w);
-    ci_config_get("window:height", (gpointer)&win_h);
+    win_x = ci_config_get_int("window:x");
+    win_y = ci_config_get_int("window:y");
+    win_w = ci_config_get_int("window:width");
+    win_h = ci_config_get_int("window:height");
     ci_config_get("window:background", (gpointer)&background_color);
 
     gtk_window_set_focus_on_map(GTK_WINDOW(window), FALSE);

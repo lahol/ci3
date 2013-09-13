@@ -29,4 +29,17 @@ gboolean ci_config_save(void);
 gboolean ci_config_get(const gchar *key, gpointer value);
 gboolean ci_config_set(const gchar *key, gpointer value);
 
+/* Wrappers for convenience. */
+gboolean ci_config_get_boolean(const gchar *key);
+guint ci_config_get_uint(const gchar *key);
+gint ci_config_get_int(const gchar *key);
+gchar *ci_config_get_string(const gchar *key);
+gchar *ci_config_get_color_as_string(const gchar *key);
+
+#define ci_config_set_boolean(key, value) ci_config_set((key), GINT_TO_POINTER((value)))
+#define ci_config_set_uint(key, value) ci_config_set((key), GUINT_TO_POINTER((value)))
+#define ci_config_set_int(key, value) ci_config_set((key), GINT_TO_POINTER((value)))
+#define ci_config_set_string(key, value) ci_config_set((key), (gpointer)(value))
+gboolean ci_config_set_color_as_string(const gchar *key, gchar *value);
+
 #endif

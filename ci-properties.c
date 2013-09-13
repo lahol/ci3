@@ -20,3 +20,11 @@ gboolean ci_property_get(const gchar *key, gpointer value)
     }
     return FALSE;
 }
+
+gboolean ci_property_get_boolean(const gchar *key)
+{
+    gboolean val;
+    if (!ci_property_get(key, &val))
+        return FALSE;
+    return FALSE;
+}

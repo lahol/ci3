@@ -7,6 +7,7 @@
 #include "ci-call-list.h"
 #include <memory.h>
 #include "gtk2-compat.h"
+#include "ci-utils.h"
 
 struct CIConfigVariable {
     CIConfigType type;
@@ -21,25 +22,6 @@ struct CIConfigGroup {
 };
 
 GList *ci_config_groups = NULL; /* [element-type: struct CIConfigGroup] */
-
-gchar *ci_color_to_string(GdkRGBA *color)
-{
-    if (color == NULL)
-        return NULL;
-
-    gchar *string = g_malloc(8);
-    g_sprintf(string, "#%02x%02x%02x",
-            (guchar)(255*color->red) & 0xff,
-            (guchar)(255*color->green) & 0xff,
-            (guchar)(255*color->blue) & 0xff);
-
-    return string;
-}
-
-void ci_string_to_color(GdkRGBA *color, const gchar *string)
-{
-    gdk_rgba_parse(color, string);
-}
 
 gchar *ci_config_get_config_file(void)
 {
@@ -312,6 +294,46 @@ out:
     return FALSE;
 }
 
+gboolean ci_config_get_boolean(const gchar *key)
+{
+    gboolean val;
+    if (!ci_config_get(key, &val))
+        return FALSE;
+    return val;
+}
+
+guint ci_config_get_uint(const gchar *key)
+{
+    guint val;
+    if (!ci_config_get(key, &val))
+        return 0;
+    return val;
+}
+
+gint ci_config_get_int(const gchar *key)
+{
+    gint val;
+    if (!ci_config_get(key, &val))
+        return 0;
+    return val;
+}
+
+gchar *ci_config_get_string(const gchar *key)
+{
+    gchar *val = NULL;
+    if (!ci_config_get(key, &val))
+        return NULL;
+    return val;
+}
+
+gchar *ci_config_get_color_as_string(const gchar *key)
+{
+    GdkRGBA col;
+    if (!ci_config_get(key, &col))
+        return NULL;
+    return ci_color_to_string(&col);
+}
+
 gboolean ci_config_variable_set(struct CIConfigVariable *var, gpointer value)
 {
     if (var == NULL)
@@ -356,6 +378,14 @@ gboolean ci_config_set(const gchar *key, gpointer value)
 out:
     g_strfreev(split);
     return FALSE;
+}
+
+gboolean ci_config_set_color_as_string(const gchar *key, gchar *value)
+{
+    GdkRGBA color;
+    ci_string_to_color(&color, value);
+
+    return ci_config_set(key, (gpointer)&color);
 }
 
 /* [element-type: gchar*, "group:key" */

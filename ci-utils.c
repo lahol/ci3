@@ -1,5 +1,6 @@
 #include "ci-utils.h"
 #include <string.h>
+#include <glib/gprintf.h>
 
 gchar *ci_util_format_string(const gchar *format, CIFormatCallback format_cb, gpointer userdata)
 {
@@ -87,4 +88,23 @@ GList *ci_util_list_truncate(GList *list, guint length, GFreeFunc freefunc)
     g_list_free_full(tmp, freefunc);
 
     return tmp;
+}
+
+gchar *ci_color_to_string(GdkRGBA *color)
+{
+    if (color == NULL)
+        return NULL;
+
+    gchar *string = g_malloc(8);
+    g_sprintf(string, "#%02x%02x%02x",
+            (guchar)(255*color->red) & 0xff,
+            (guchar)(255*color->green) & 0xff,
+            (guchar)(255*color->blue) & 0xff);
+
+    return string;
+}
+
+void ci_string_to_color(GdkRGBA *color, const gchar *string)
+{
+    gdk_rgba_parse(color, string);
 }
