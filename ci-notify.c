@@ -165,7 +165,7 @@ struct CINotifyEvent *ci_notify_event_new(gchar *msgid)
 {
     struct CINotifyEvent *event = g_malloc0(sizeof(struct CINotifyEvent));
     if (msgid != NULL)
-        strncpy(event->msgid, msgid, 15);
+        g_strlcpy(event->msgid, msgid, 16);
     else
         event->msgid[0] = 0;
 
