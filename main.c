@@ -495,19 +495,20 @@ int main(int argc, char **argv)
         LOG("failed to create icon\n");
 
     CIMenuItemCallbacks menu_cb = {
-        handle_quit,
-        handle_show,
-        handle_select_font,
-        handle_edit_element,
-        handle_edit_mode,
-        handle_edit_color,
-        handle_save_config,
-        handle_connect,
-        handle_refresh,
-        handle_add,
-        handle_remove,
-        handle_add_caller,
-        handle_about
+        .handle_quit         = handle_quit,
+        .handle_show         = handle_show,
+        .handle_edit_font    = handle_select_font,
+        .handle_edit_element = handle_edit_element,
+        .handle_edit_mode    = handle_edit_mode,
+        .handle_edit_color   = handle_edit_color,
+        .handle_save_config  = handle_save_config,
+        .handle_connect      = handle_connect,
+        .handle_refresh      = handle_refresh,
+        .handle_add          = handle_add,
+        .handle_remove       = handle_remove,
+        .handle_add_caller   = handle_add_caller,
+        .handle_about        = handle_about,
+        .handle_edit_config  = handle_edit_config
     };
     ci_menu_init(ci_property_get, &menu_cb);
 

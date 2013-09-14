@@ -18,6 +18,7 @@ typedef struct {
     void (*handle_remove)(gpointer data);
     void (*handle_add_caller)(gpointer data);
     void (*handle_about)(void);
+    void (*handle_edit_config)(void);
 } CIMenuItemCallbacks;
 
 typedef enum {

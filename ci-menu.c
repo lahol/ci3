@@ -15,7 +15,8 @@ enum CIMenuItemType {
     CIMenuItemTypeAddElement,
     CIMenuItemTypeRemoveElement,
     CIMenuItemTypeAddCaller,
-    CIMenuItemTypeAbout
+    CIMenuItemTypeAbout,
+    CIMenuItemTypeEditConfig
 };
 
 struct CIMenuItem {
@@ -163,6 +164,7 @@ GtkWidget *ci_menu_context_menu(CIContextType ctxtype, gpointer userdata)
     }
 
     ci_menu_append_separator(popup);
+    ci_menu_append_menu_item(popup, _("Edit configuration"), CIMenuItemTypeEditConfig, NULL);
     ci_menu_append_menu_item(popup, _("Save configuration"), CIMenuItemTypeSaveConfig, NULL);
 
     ci_menu_append_separator(popup);
@@ -179,60 +181,32 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
     if (menu_item == NULL)
         return;
 
+#define _MENUCASE(type,cb,arg) \
+    case CIMenuItemType ## type:\
+        if (ci_menu_callbacks.handle_ ## cb)\
+            ci_menu_callbacks.handle_ ## cb(arg);\
+        break
+#define MENUCASEDATA(type,cb) _MENUCASE(type,cb,menu_item->data);
+#define MENUCASE(type,cb)     _MENUCASE(type,cb,)
+
     switch (menu_item->type) {
-        case CIMenuItemTypeQuit:
-            if (ci_menu_callbacks.handle_quit)
-                ci_menu_callbacks.handle_quit();
-            break;
-        case CIMenuItemTypeShow:
-            if (ci_menu_callbacks.handle_show)
-                ci_menu_callbacks.handle_show(menu_item->data);
-            break;
-        case CIMenuItemTypeEditFont:
-            if (ci_menu_callbacks.handle_edit_font)
-                ci_menu_callbacks.handle_edit_font(menu_item->data);
-            break;
-        case CIMenuItemTypeEditFormat:
-            if (ci_menu_callbacks.handle_edit_element)
-                ci_menu_callbacks.handle_edit_element(menu_item->data);
-            break;
-        case CIMenuItemTypeEditMode:
-            if (ci_menu_callbacks.handle_edit_mode)
-                ci_menu_callbacks.handle_edit_mode(menu_item->data);
-            break;
-        case CIMenuItemTypeEditColor:
-            if (ci_menu_callbacks.handle_edit_color)
-                ci_menu_callbacks.handle_edit_color(menu_item->data);
-            break;
-        case CIMenuItemTypeSaveConfig:
-            if (ci_menu_callbacks.handle_save_config)
-                ci_menu_callbacks.handle_save_config();
-            break;
-        case CIMenuItemTypeConnect:
-            if (ci_menu_callbacks.handle_connect)
-                ci_menu_callbacks.handle_connect(menu_item->data);
-            break;
-        case CIMenuItemTypeRefresh:
-            if (ci_menu_callbacks.handle_refresh)
-                ci_menu_callbacks.handle_refresh();
-            break;
-        case CIMenuItemTypeAddElement:
-            if (ci_menu_callbacks.handle_add)
-                ci_menu_callbacks.handle_add(menu_item->data);
-            break;
-        case CIMenuItemTypeRemoveElement:
-            if (ci_menu_callbacks.handle_remove)
-                ci_menu_callbacks.handle_remove(menu_item->data);
-            break;
-        case CIMenuItemTypeAddCaller:
-            if (ci_menu_callbacks.handle_add_caller)
-                ci_menu_callbacks.handle_add_caller(menu_item->data);
-            break;
-        case CIMenuItemTypeAbout:
-            if (ci_menu_callbacks.handle_about)
-                ci_menu_callbacks.handle_about();
-            break;
+        MENUCASE(     Quit,          quit);
+        MENUCASEDATA( Show,          show);
+        MENUCASEDATA( EditFont,      edit_font);
+        MENUCASEDATA( EditFormat,    edit_element);
+        MENUCASEDATA( EditMode,      edit_mode);
+        MENUCASEDATA( EditColor,     edit_color);
+        MENUCASE(     SaveConfig,    save_config);
+        MENUCASEDATA( Connect,       connect);
+        MENUCASE(     Refresh,       refresh);
+        MENUCASEDATA( AddElement,    add);
+        MENUCASEDATA( RemoveElement, remove);
+        MENUCASEDATA( AddCaller,     add_caller);
+        MENUCASE(     About,         about);
+        MENUCASE(     EditConfig,    edit_config);
         default:
             break;
     }
+#undef MENUCASEDATA
+#undef MENUCASE
 }
