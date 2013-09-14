@@ -28,6 +28,7 @@ void client_start(CIMsgCallback callback);
 void client_set_state_changed_callback(CIClientStateChangedFunc func);
 void client_connect(void);
 void client_disconnect(void);
+void client_restart(gboolean force);
 void client_stop(void);
 void client_shutdown(void);
 

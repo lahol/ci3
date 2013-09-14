@@ -306,6 +306,29 @@ void client_disconnect(void)
     client_stop();
 }
 
+void client_restart(gboolean force)
+{
+    if (ciclient.state == CIClientStateUnknown) {
+        client_start(NULL);
+        return;
+    }
+
+    gchar *host = ci_config_get_string("client:host");
+    guint port = ci_config_get_uint("client:port");
+
+    if (g_strcmp0(ciclient.host, host) != 0 ||
+            ciclient.port != port ||
+            force == TRUE) {
+        g_free(ciclient.host);
+        ciclient.host = host;
+        ciclient.port = port;
+
+        client_connect();
+    }
+    else
+        g_free(host);
+}
+
 gboolean client_try_connect_func(gpointer userdata)
 {
     DLOG("client_try_connect\n");
