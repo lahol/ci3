@@ -121,40 +121,48 @@ GtkWidget *ci_menu_context_menu(CIContextType ctxtype, gpointer userdata)
     GtkWidget *popup = gtk_menu_new();
 
     gboolean edit_mode = FALSE;
+    gboolean connected = FALSE;
 
-    if (property_callback)
+    if (property_callback) {
         property_callback("edit-mode", (gpointer)&edit_mode);
+        property_callback("client-connected", (gpointer)&connected);
+    }
 
     ci_menu_append_stock_menu_item(popup, GTK_STOCK_ABOUT, CIMenuItemTypeAbout, NULL);
     ci_menu_append_separator(popup);
     ci_menu_append_menu_item(popup, "Refresh", CIMenuItemTypeRefresh, NULL);
+    ci_menu_append_stock_menu_item(popup,
+            connected ? GTK_STOCK_DISCONNECT : GTK_STOCK_CONNECT,
+            CIMenuItemTypeConnect,
+            (gpointer)(gulong)(connected ? TRUE : FALSE));
+    ci_menu_append_separator(popup);
 
     ci_menu_append_check_menu_item(popup, "Edit", CIMenuItemTypeEditMode,
                                    (gpointer)(gulong)(edit_mode ? TRUE : FALSE), edit_mode);
     if (edit_mode) {
         ci_menu_append_separator(popup);
         if (ctxtype == CIContextTypeNone) {
-            ci_menu_append_menu_item(popup, "Add Element", CIMenuItemTypeAddElement, userdata);
+            ci_menu_append_menu_item(popup, "Add element", CIMenuItemTypeAddElement, userdata);
         }
         else if (ctxtype == CIContextTypeDisplayElement) {
-            ci_menu_append_menu_item(popup, "Remove Element", CIMenuItemTypeRemoveElement, userdata);
+            ci_menu_append_menu_item(popup, "Remove element", CIMenuItemTypeRemoveElement, userdata);
         }
         else if (ctxtype == CIContextTypeList) {
-            ci_menu_append_menu_item(popup, "Add Column", CIMenuItemTypeAddElement, userdata);
-            ci_menu_append_menu_item(popup, "Remove Column", CIMenuItemTypeRemoveElement, userdata);
+            ci_menu_append_menu_item(popup, "Add column", CIMenuItemTypeAddElement, userdata);
+            ci_menu_append_menu_item(popup, "Remove column", CIMenuItemTypeRemoveElement, userdata);
         }
         if (ctxtype == CIContextTypeDisplayElement || ctxtype == CIContextTypeList) {
             ci_menu_append_separator(popup);
-            ci_menu_append_menu_item(popup, "Edit Format", CIMenuItemTypeEditFormat, userdata);
-            ci_menu_append_menu_item(popup, "Edit Font", CIMenuItemTypeEditFont, userdata);
-            ci_menu_append_menu_item(popup, "Edit Color", CIMenuItemTypeEditColor, userdata);
+            ci_menu_append_menu_item(popup, "Edit format", CIMenuItemTypeEditFormat, userdata);
+            ci_menu_append_menu_item(popup, "Edit font", CIMenuItemTypeEditFont, userdata);
+            ci_menu_append_menu_item(popup, "Edit color", CIMenuItemTypeEditColor, userdata);
         }
         ci_menu_append_separator(popup);
-        ci_menu_append_menu_item(popup, "Edit Background Color", CIMenuItemTypeEditColor, userdata);
-
-        ci_menu_append_separator(popup);
-        ci_menu_append_menu_item(popup, "Save Config", CIMenuItemTypeSaveConfig, NULL);
+        ci_menu_append_menu_item(popup, "Edit background color", CIMenuItemTypeEditColor, userdata);
     }
+
+    ci_menu_append_separator(popup);
+    ci_menu_append_menu_item(popup, "Save configuration", CIMenuItemTypeSaveConfig, NULL);
 
     ci_menu_append_separator(popup);
     ci_menu_append_menu_item(popup, "Add to phonebook", CIMenuItemTypeAddCaller, userdata);
