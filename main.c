@@ -364,6 +364,8 @@ void handle_add_caller(gpointer userdata)
 
     CICallerInfo ci;
 
+    memset(&ci, 0, sizeof(CICallerInfo));
+
     if (selection != NULL &&
             selection->completenumber != NULL &&
             selection->completenumber[0] != 0) {
