@@ -3,6 +3,7 @@
 #include <string.h>
 #include "ci-logging.h"
 #include "ci-config.h"
+#include <glib/gi18n.h>
 
 struct CINotifyEvent {
     gchar msgid[16];
@@ -63,21 +64,21 @@ void ci_notify_present(CINetMsgType type, CICallInfo *call_info, gchar *msgid)
     gchar *body = NULL;
 
     if (type == CI_NET_MSG_EVENT_RING) {
-        summary = g_strdup("New call");
+        summary = g_strdup(_("New call"));
         if (server_caps.body)
             body = g_markup_printf_escaped(server_caps.body_markup ?
-                    "Call from <b>(%s) %s</b> to %s\n <b>%s</b> (%s)\n %s %s" :
-                    "Call from (%s) %s to %s\n %s (%s)\n %s %s",
+                    _("Call from <b>(%s) %s</b> to %s\n <b>%s</b> (%s)\n %s %s") :
+                    _("Call from (%s) %s to %s\n %s (%s)\n %s %s"),
                     call_info->areacode, call_info->number, call_info->msn,
                     call_info->name, call_info->area,
                     call_info->time, call_info->date);
     }
     else if (type == CI_NET_MSG_EVENT_CALL) {
-        summary = g_strdup("Outgoing call");
+        summary = g_strdup(_("Outgoing call"));
         if (server_caps.body)
             body = g_markup_printf_escaped(server_caps.body_markup ?
-                    "Outgoing call to <b>%s</b>\n %s %s" : 
-                    "Outgoing call to %s\n %s %s",
+                    _("Outgoing call to <b>%s</b>\n %s %s") : 
+                    _("Outgoing call to %s\n %s %s"),
                     call_info->completenumber,
                     call_info->time, call_info->date);
     }

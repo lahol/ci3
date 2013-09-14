@@ -1,4 +1,5 @@
 #include <glib.h>
+#include <glib/gi18n.h>
 #include <gio/gio.h>
 #include "ci-logging.h"
 #include "ci-client.h"
@@ -53,35 +54,35 @@ gchar *ci_format_call_info(gchar conversion_symbol, CICallInfo *data)
     static char static_buffer[256];
     switch (conversion_symbol) {
         case 'n':
-            if (data) return (data->number && data->number[0]) ? data->number : "<unknown>";
-            return "<number>";
+            if (data) return (data->number && data->number[0]) ? data->number : _("<unknown>");
+            return _("<number>");
         case 'N':
-            if (data) return (data->name && data->name[0]) ? data->name : "<unknown>";
-            return "<name>";
+            if (data) return (data->name && data->name[0]) ? data->name : _("<unknown>");
+            return _("<name>");
         case 'D':
-            if (data) return data->date ? data->date : "<unknown>";
-            return "<date>";
+            if (data) return data->date ? data->date : _("<unknown>");
+            return _("<date>");
         case 'T':
-            if (data) return data->time ? data->time : "<unknown>";
-            return "<time>";
+            if (data) return data->time ? data->time : _("<unknown>");
+            return _("<time>");
         case 'M':
-            if (data) return data->msn ? data->msn : "<unknown>";
-            return "<msn>";
+            if (data) return data->msn ? data->msn : _("<unknown>");
+            return _("<msn>");
         case 'A':
-            if (data) return data->alias ? data->alias : "<unknown>";
-            return "<alias>";
+            if (data) return data->alias ? data->alias : _("<unknown>");
+            return _("<alias>");
         case 'p':
-            if (data) return (data->areacode && data->areacode[0]) ? data->areacode : "<unknown>";
-            return "<areacode>";
+            if (data) return (data->areacode && data->areacode[0]) ? data->areacode : _("<unknown>");
+            return _("<areacode>");
         case 'P':
-            if (data) return data->area ? data->area : "<unknown>";
-            return "<area>";
+            if (data) return data->area ? data->area : _("<unknown>");
+            return _("<area>");
         case 'i':
             static_buffer[0] = 0;
             if (data)
                 sprintf(static_buffer, "%d", data->id);
             else
-                return "<id>";
+                return _("<id>");
             return static_buffer;
         default:
             return NULL;

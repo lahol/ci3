@@ -1,6 +1,7 @@
 #include "ci-dialogs.h"
 #include "ci-window.h"
 #include "ci-config.h"
+#include <glib/gi18n.h>
 
 gboolean ci_dialogs_add_caller(CICallerInfo *caller)
 {
@@ -28,20 +29,20 @@ gboolean ci_dialogs_add_caller(CICallerInfo *caller)
     /* padding, align */
 #if GTK_CHECK_VERSION(3, 0, 0)
     GtkWidget *grid = gtk_grid_new();
-    label = gtk_label_new("Number:");
+    label = gtk_label_new(_("Number:"));
     gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entries[0], 1, 0, 1, 1);
 
-    label = gtk_label_new("Name:");
+    label = gtk_label_new(_("Name:"));
     gtk_grid_attach(GTK_GRID(grid), label, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), entries[1], 1, 1, 1, 1);
 #else
     GtkWidget *grid = gtk_table_new(2, 2, FALSE);
-    label = gtk_label_new("Number:");
+    label = gtk_label_new(_("Number:"));
     gtk_table_attach_defaults(GTK_TABLE(grid), label, 0, 1, 0, 1);
     gtk_table_attach_defaults(GTK_TABLE(grid), entries[0], 1, 2, 0, 1);
 
-    label = gtk_label_new("Name:");
+    label = gtk_label_new(_("Name:"));
     gtk_table_attach_defaults(GTK_TABLE(grid), label, 0, 1, 1, 2);
     gtk_table_attach_defaults(GTK_TABLE(grid), entries[1], 1, 2, 1, 2);
 #endif
@@ -77,7 +78,7 @@ void ci_dialogs_about(void)
     gchar *cfgfile, *comment = NULL;
 
     cfgfile = ci_config_get_string("config-file");
-    comment = g_strconcat("Configuration file: ", cfgfile, NULL);
+    comment = g_strconcat(_("Configuration file: "), cfgfile, NULL);
     gchar *authors[] = { "Holger Langenau", NULL };
 #ifndef CIVERSION
 #define CIVERSION "2.9"

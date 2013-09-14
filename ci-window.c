@@ -4,6 +4,7 @@
 #include <memory.h>
 #include "ci-config.h"
 #include "ci-call-list.h"
+#include <glib/gi18n.h>
 
 GtkWidget *window = NULL;
 GtkWidget *darea;
@@ -398,7 +399,7 @@ gboolean ci_window_edit_element_dialog(gchar **format)
     if (format == NULL)
         return FALSE;
 
-    GtkWidget *dialog = gtk_dialog_new_with_buttons("Edit Format String",
+    GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit format string"),
             GTK_WINDOW(window),
             GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
             GTK_STOCK_APPLY,
