@@ -26,6 +26,9 @@ gboolean ci_dialogs_add_caller(CICallerInfo *caller)
     entries[0] = gtk_entry_new_with_buffer(buffers[0]);
     entries[1] = gtk_entry_new_with_buffer(buffers[1]);
 
+    g_object_set(G_OBJECT(entries[0]), "activates-default", TRUE, NULL);
+    g_object_set(G_OBJECT(entries[1]), "activates-default", TRUE, NULL);
+
     /* padding, align */
 #if GTK_CHECK_VERSION(3, 0, 0)
     GtkWidget *grid = gtk_grid_new();
@@ -53,9 +56,14 @@ gboolean ci_dialogs_add_caller(CICallerInfo *caller)
 
     gtk_container_add(GTK_CONTAINER(content_area), grid);
 
-/*    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY);
-    gtk_dialog_set_response_sensitive(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, TRUE);
-*/
+    GtkWidget *default_button = gtk_dialog_get_widget_for_response(GTK_DIALOG(dialog),
+                                                                   GTK_RESPONSE_APPLY);
+
+    if (default_button != NULL) {
+        gtk_widget_set_can_default(default_button, TRUE);
+        gtk_widget_grab_default(default_button);
+    }
+
     GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     if (result == GTK_RESPONSE_APPLY) {

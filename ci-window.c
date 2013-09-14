@@ -414,9 +414,19 @@ gboolean ci_window_edit_element_dialog(gchar **format)
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     entry = gtk_entry_new_with_buffer(buffer);
 
+    g_object_set(G_OBJECT(entry), "activates-default", TRUE, NULL);
+
     gtk_widget_show(entry);
 
     gtk_container_add(GTK_CONTAINER(content_area), entry);
+
+    GtkWidget *default_button = gtk_dialog_get_widget_for_response(GTK_DIALOG(dialog),
+                                                                   GTK_RESPONSE_APPLY);
+
+    if (default_button != NULL) {
+        gtk_widget_set_can_default(default_button, TRUE);
+        gtk_widget_grab_default(default_button);
+    }
 
     GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
 
