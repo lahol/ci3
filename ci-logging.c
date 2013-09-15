@@ -34,11 +34,16 @@ void ci_log(gchar *format, ...)
 
     time_t t;
     static char buf[64];
-    static struct tm bdt;
+    static struct tm bdt, *pdt = NULL;
 
     time(&t);
+#ifdef WIN32
+    pst = localtime(&t);
+#else
     localtime_r(&t, &bdt);
-    strftime(buf, 63, "[%Y%m%d-%H%M%S] ", &bdt);
+    pst = &bdt;
+#endif
+    strftime(buf, 63, "[%Y%m%d-%H%M%S] ", pst);
     fputs(buf, f);
 
     va_list args;
