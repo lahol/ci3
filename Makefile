@@ -1,6 +1,8 @@
-CC = gcc
-CFLAGS = -Wall -g `pkg-config --cflags glib-2.0 gio-2.0 gtk+-3.0 json-glib-1.0`
-LIBS += `pkg-config --libs glib-2.0 gio-2.0 gtk+-3.0 json-glib-1.0` -lcinet
+CC := gcc
+PKG_CONFIG := pkg-config
+
+CFLAGS = -Wall -g `$(PKG_CONFIG) --cflags glib-2.0 gio-2.0 json-glib-1.0`
+LIBS += `$(PKG_CONFIG) --libs glib-2.0 gio-2.0 json-glib-1.0` -lcinet
 
 CIVERSION := '$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
 
@@ -14,6 +16,14 @@ ci_HEADERS := $(filter-out cilogo-pixbuf.h ci-notify.h, $(wildcard *.h))
 
 CFLAGS += -DCIVERSION=\"${CIVERSION}\"
 CFLAGS += -DAPPNAME=\"${APPNAME}\"
+
+ifndef WITHGTK2
+	CFLAGS += `$(PKG_CONFIG) --cflags gtk+-3.0`
+	LIBS   += `$(PKG_CONFIG) --libs gtk+-3.0`
+else
+	CFLAGS += `$(PKG_CONFIG) --cflags gtk+-2.0`
+	LIBS   += `$(PKG_CONFIG) --libs gtk+-2.0`
+endif
 
 ifndef WITHOUTLIBNOTIFY
 	CFLAGS += -DUSELIBNOTIFY
