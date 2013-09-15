@@ -108,3 +108,25 @@ void ci_string_to_color(GdkRGBA *color, const gchar *string)
 {
     gdk_rgba_parse(color, string);
 }
+
+gchar *ci_util_strdup_clean_number(const gchar *number)
+{
+    gchar *result = g_strdup(number);
+    return ci_util_clean_number(result);
+}
+
+gchar *ci_util_clean_number(gchar *number)
+{
+    if (number == NULL)
+        return NULL;
+    gsize i = 0, j = 0;
+    while (number[i] != 0) {
+        if (g_ascii_isdigit(number[i]) && i > j)
+            number[j++] = number[i++];
+        else
+            ++i;
+    }
+    number[j] = 0;
+
+    return number;
+}

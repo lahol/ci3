@@ -16,7 +16,8 @@ enum CIMenuItemType {
     CIMenuItemTypeRemoveElement,
     CIMenuItemTypeAddCaller,
     CIMenuItemTypeAbout,
-    CIMenuItemTypeEditConfig
+    CIMenuItemTypeEditConfig,
+    CIMenuItemTypePhonebook
 };
 
 struct CIMenuItem {
@@ -107,6 +108,7 @@ GtkWidget *ci_menu_popup_menu(gpointer userdata)
 
     ci_menu_append_menu_item(popup, visible ? _("Hide") : _("Show"),
             CIMenuItemTypeShow, (gpointer)(gulong)(visible ? TRUE : FALSE));
+    ci_menu_append_menu_item(popup, _("Show phonebook"), CIMenuItemTypePhonebook, NULL);
     ci_menu_append_stock_menu_item(popup,
             connected ? GTK_STOCK_DISCONNECT : GTK_STOCK_CONNECT,
             CIMenuItemTypeConnect,
@@ -169,6 +171,7 @@ GtkWidget *ci_menu_context_menu(CIContextType ctxtype, gpointer userdata)
 
     ci_menu_append_separator(popup);
     ci_menu_append_menu_item(popup, _("Add to phonebook"), CIMenuItemTypeAddCaller, userdata);
+    ci_menu_append_menu_item(popup, _("Show phonebook"), CIMenuItemTypePhonebook, NULL);
 
     ci_menu_append_separator(popup);
     ci_menu_append_stock_menu_item(popup, GTK_STOCK_QUIT, CIMenuItemTypeQuit, NULL);
@@ -204,6 +207,7 @@ void ci_menu_handle(GtkMenuItem *item, struct CIMenuItem *menu_item)
         MENUCASEDATA( AddCaller,     add_caller);
         MENUCASE(     About,         about);
         MENUCASE(     EditConfig,    edit_config);
+        MENUCASE(     Phonebook,     phonebook);
         default:
             break;
     }

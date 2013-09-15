@@ -1,6 +1,7 @@
 #include "ci-dialogs.h"
 #include "ci-window.h"
 #include "ci-config.h"
+#include "ci-utils.h"
 #include <glib/gi18n.h>
 
 gboolean ci_dialogs_add_caller(CICallerInfo *caller)
@@ -69,7 +70,7 @@ gboolean ci_dialogs_add_caller(CICallerInfo *caller)
     if (result == GTK_RESPONSE_APPLY) {
         g_free(caller->number);
         g_free(caller->name);
-        caller->number = g_strdup(gtk_entry_buffer_get_text(buffers[0]));
+        caller->number = ci_util_strdup_clean_number(gtk_entry_buffer_get_text(buffers[0]));
         caller->name = g_strdup(gtk_entry_buffer_get_text(buffers[1]));
     }
 

@@ -30,10 +30,16 @@ void update_last_call_display(void);
 void query_last_call_caller_info(void);
 
 void handle_refresh(void);
-void refresh_after_done(CINetMsg *msg, gpointer userdata)
+
+void refresh_display(void)
 {
     query_last_call_caller_info();
     ci_call_list_reload();
+}
+
+void refresh_after_done(CINetMsg *msg, gpointer userdata)
+{
+    refresh_display();
 }
 
 void handle_quit(void)
@@ -371,8 +377,7 @@ void handle_add_caller(gpointer userdata)
     }
 
     CICallerInfo ci;
-
-    memset(&ci, 0, sizeof(CICallerInfo));
+    cinet_caller_info_init(&ci);
 
     if (selection != NULL &&
             selection->completenumber != NULL &&
@@ -388,6 +393,7 @@ void handle_add_caller(gpointer userdata)
                     "number", ci.number,
                     "name", ci.name,
                     NULL, NULL);
+            cinet_caller_info_free(&ci);
         }
     }
 }
@@ -464,6 +470,11 @@ void handle_edit_config(void)
     ci_dialog_config_show(config_changed_cb);
 }
 
+void handle_phonebook(void)
+{
+    ci_dialog_phonebook_show(refresh_display);
+}
+
 void init_display(void)
 {
     ci_display_element_set_content_all((CIFormatCallback)ci_format_call_info, NULL);
@@ -531,7 +542,8 @@ int main(int argc, char **argv)
         .handle_remove       = handle_remove,
         .handle_add_caller   = handle_add_caller,
         .handle_about        = handle_about,
-        .handle_edit_config  = handle_edit_config
+        .handle_edit_config  = handle_edit_config,
+        .handle_phonebook    = handle_phonebook
     };
     ci_menu_init(ci_property_get, &menu_cb);
 

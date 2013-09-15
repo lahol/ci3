@@ -5,6 +5,7 @@
 #include <cinetmsgs.h>
 
 #include "ci-dialog-config.h"
+#include "ci-dialog-phonebook.h"
 #include "gtk2-compat.h"
 
 gboolean ci_dialogs_add_caller(CICallerInfo *caller);

@@ -15,4 +15,7 @@ GList *ci_util_list_truncate(GList *list, guint length, GFreeFunc freefunc);
 gchar *ci_color_to_string(GdkRGBA *color);
 void ci_string_to_color(GdkRGBA *color, const gchar *string);
 
+gchar *ci_util_strdup_clean_number(const gchar *number);
+gchar *ci_util_clean_number(gchar *number);
+
 #endif
