@@ -38,12 +38,12 @@ void ci_log(gchar *format, ...)
 
     time(&t);
 #ifdef WIN32
-    pst = localtime(&t);
+    pdt = localtime(&t);
 #else
     localtime_r(&t, &bdt);
-    pst = &bdt;
+    pdt = &bdt;
 #endif
-    strftime(buf, 63, "[%Y%m%d-%H%M%S] ", pst);
+    strftime(buf, 63, "[%Y%m%d-%H%M%S] ", pdt);
     fputs(buf, f);
 
     va_list args;
