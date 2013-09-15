@@ -7,17 +7,20 @@ CFLAGS=-Wall -g -I$(CROSSENV)/usr/include `$(PKG_CONFIG) --cflags glib-2.0 gio-2
 LDFLAGS=-Wl,-subsystem,windows
 LIBS=-L$(CROSSENV)/usr/lib `$(PKG_CONFIG) --libs glib-2.0 gio-2.0 gtk+-2.0 json-glib-1.0` -lcinet
 
-ci_SRC := $(wildcard *.c)
-ci_OBJ := $(ci_SRC:.c=.o)
-ci_HEADERS := $(filter-out cilogo-pixbuf.h, $(wildcard *.h))
+APPNAME := ciclient
 
-CIVERSION := '$(shell git describe --tags --always)  ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
+ci_SRC := $(filter-out ci-notify.c, $(wildcard *.c))
+ci_OBJ := $(ci_SRC:.c=.o)
+ci_HEADERS := $(filter-out cilogo-pixbuf.h ci-notify.h, $(wildcard *.h))
+
+CIVERSION := '$(shell git describe --tags --always) ($(shell git log --pretty=format:%cd --date=short -n1), branch \"$(shell git describe --tags --always --all | sed s:heads/::)\")'
 
 CFLAGS += -DCIVERSION=\"${CIVERSION}\"
+CFLAGS += -DAPPNAME=\"${APPNAME}\"
 
-all: ciclient.exe
+all: $(APPNAME).exe
 
-ciclient.exe: $(ci_OBJ) ciclient.o
+$(APPNAME).exe: $(ci_OBJ) ciclient.o
 	$(CC) $(LDFLAGS) -o $@ $^ ciclient.o $(LIBS)
 
 ci-icon.o: cilogo-pixbuf.h

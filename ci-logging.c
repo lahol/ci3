@@ -3,6 +3,7 @@
 #include <string.h>
 #include "ci-logging.h"
 #include "ci-config.h"
+#include <time.h>
 
 gchar filename[1024];
 gboolean initialized = FALSE;
