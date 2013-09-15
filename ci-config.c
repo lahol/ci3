@@ -8,12 +8,14 @@
 #include <memory.h>
 #include "gtk2-compat.h"
 #include "ci-utils.h"
+#include <stdlib.h>
 
 struct CIConfigVariable {
     CIConfigType type;
     gchar *key;
     gpointer default_value;
     gpointer value;
+    gboolean do_export;
 };
 
 struct CIConfigGroup {
@@ -127,7 +129,7 @@ struct CIConfigVariable *ci_config_get_variable(const gchar *group, const gchar 
 }
 
 void ci_config_add_setting(const gchar *group, const gchar *key,
-                           CIConfigType type, gpointer default_value)
+                           CIConfigType type, gpointer default_value, gboolean do_export)
 {
     struct CIConfigVariable *setting = ci_config_get_variable(group, key, TRUE);
     if (setting == NULL)
@@ -147,6 +149,8 @@ void ci_config_add_setting(const gchar *group, const gchar *key,
 
     /* CAUTION: if value == default_value first alloc value */
     setting->value = setting->default_value;
+
+    setting->do_export = do_export;
 }
 
 void ci_config_value_free(gpointer value)
@@ -401,11 +405,12 @@ GList *ci_config_enum_settings(void)
     for (group = ci_config_groups; group != NULL; group = g_list_next(group)) {
         for (var = (GList*)((struct CIConfigGroup*)group->data)->variables;
                 var != NULL; var = g_list_next(var)) {
-            settings = g_list_insert_sorted(settings,
-                    g_strjoin(":",
-                        ((struct CIConfigGroup*)group->data)->groupname,
-                        ((struct CIConfigVariable*)var->data)->key,
-                        NULL), (GCompareFunc)g_strcmp0);
+            if (((struct CIConfigVariable*)var->data)->do_export)
+                settings = g_list_prepend(settings,
+                        g_strjoin(":",
+                            ((struct CIConfigGroup*)group->data)->groupname,
+                            ((struct CIConfigVariable*)var->data)->key,
+                            NULL));
         }
     }
 
@@ -434,6 +439,11 @@ CIConfigType ci_config_setting_get_type(CIConfigSetting *setting)
     return setting->type;
 }
 
+gboolean ci_config_setting_set_value(CIConfigSetting *setting, gpointer value)
+{
+    return ci_config_variable_set(setting, value);
+}
+
 gboolean ci_config_setting_get_value(CIConfigSetting *setting, gpointer value)
 {
     return ci_config_variable_get(setting, value, FALSE);
@@ -442,6 +452,70 @@ gboolean ci_config_setting_get_value(CIConfigSetting *setting, gpointer value)
 gboolean ci_conifg_setting_get_default_value(CIConfigSetting *setting, gpointer value)
 {
     return ci_config_variable_get(setting, value, TRUE);
+}
+
+gchar *ci_config_setting_to_string(CIConfigType type, gpointer value)
+{
+    switch (type) {
+        case CIConfigTypeInt: return g_strdup_printf("%d", GPOINTER_TO_INT(value));
+        case CIConfigTypeUint: return g_strdup_printf("%u", GPOINTER_TO_UINT(value));
+        case CIConfigTypeString: return g_strdup((gchar *)value);
+        case CIConfigTypeColor: return ci_color_to_string((GdkRGBA *)value);
+        case CIConfigTypeBoolean: return g_strdup(((gboolean)GPOINTER_TO_INT(value)) ? "true" : "false");
+        default: return NULL;
+    }
+}
+
+gboolean ci_config_setting_from_string(CIConfigType type, gpointer *value, gchar *strval)
+{
+    if (value == NULL)
+        return FALSE;
+
+    switch (type) {
+        case CIConfigTypeInt:
+            *value = GINT_TO_POINTER((gint)strtol(strval, NULL, 10));
+            break;
+        case CIConfigTypeUint:
+            *value = GUINT_TO_POINTER((guint)strtoul(strval, NULL, 10));
+            break;
+        case CIConfigTypeString:
+            if (*value)
+                g_free(*value);
+            if (strval == NULL || strval[0] == 0)
+                *value = NULL;
+            else
+                *value = g_strdup(strval);
+            break;
+        case CIConfigTypeColor:
+            if (*value == NULL)
+                *value = g_malloc0(sizeof(GdkRGBA));
+            ci_string_to_color(*value, strval);
+            break;
+        case CIConfigTypeBoolean:
+            if (g_strcmp0(strval, "true") == 0)
+                *value = GINT_TO_POINTER((gint)TRUE);
+            else
+                *value = GINT_TO_POINTER((gint)FALSE);
+            break;
+        default:
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+gchar *ci_config_setting_get_value_as_string(CIConfigSetting *setting)
+{
+    if (setting == NULL)
+        return NULL;
+    return ci_config_setting_to_string(setting->type, setting->value);
+}
+
+gchar *ci_config_setting_get_default_value_as_string(CIConfigSetting *setting)
+{
+    if (setting == NULL)
+        return NULL;
+    return ci_config_setting_to_string(setting->type, setting->default_value);
 }
 
 gboolean ci_config_load_root(JsonNode *node)

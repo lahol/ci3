@@ -7,17 +7,21 @@
 gchar filename[1024];
 gboolean initialized = FALSE;
 
+void ci_logging_reinit(void)
+{
+    gchar *fname = ci_config_get_string("general:log-file");
+    if (fname)
+        strcpy(filename, fname);
+    else
+        filename[0] = 0;
+    g_free(fname);
+    initialized = TRUE;
+}
+
 void ci_log(gchar *format, ...)
 {
-    if (!initialized) {
-        gchar *fname = ci_config_get_string("general:log-file");
-        if (fname)
-            strcpy(filename, fname);
-        else
-            filename[0] = 0;
-        g_free(fname);
-        initialized = TRUE;
-    }
+    if (!initialized)
+        ci_logging_reinit();
 
     if (filename[0] == 0)
         return;

@@ -3,6 +3,7 @@
 
 #include <glib.h>
 
+void ci_logging_reinit(void);
 void ci_log(gchar *format, ...);
 
 #ifdef DEBUG

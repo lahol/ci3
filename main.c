@@ -326,7 +326,15 @@ void handle_edit_color(gpointer userdata)
         return;
     CIDisplayContext *ctx = (CIDisplayContext*)userdata;
     GdkRGBA color;
-    if (ci_window_choose_color_dialog(&color)) {
+    memset(&color, 0, sizeof(GdkRGBA));
+    if (ctx->type == CIContextTypeDisplayElement)
+        ci_display_element_get_color((CIDisplayElement*)ctx->data[0], &color);
+    else if (ctx->type == CIContextTypeNone)
+        ci_config_get("window:background", &color);
+    else if (ctx->type == CIContextTypeList)
+        ci_call_list_get_color(&color);
+
+    if (ci_dialog_choose_color_dialog(NULL, &color)) {
         if (ctx->type == CIContextTypeDisplayElement)
             ci_display_element_set_color((CIDisplayElement*)ctx->data[0], &color);
         else if (ctx->type == CIContextTypeNone)
@@ -441,6 +449,21 @@ void handle_about(void)
     ci_dialogs_about();
 }
 
+void config_changed_cb(void)
+{
+    DLOG("config changed\n");
+    ci_logging_reinit();
+    client_restart(FALSE);
+/*    query_last_call_caller_info();
+    ci_call_list_reload();
+    ci_window_update();*/
+}
+
+void handle_edit_config(void)
+{
+    ci_dialog_config_show(config_changed_cb);
+}
+
 void init_display(void)
 {
     ci_display_element_set_content_all((CIFormatCallback)ci_format_call_info, NULL);
@@ -452,26 +475,26 @@ void init_display(void)
 
 void init_config(void)
 {
-    ci_config_add_setting("general", "output", CIConfigTypeString, (gpointer)"default");
-    ci_config_add_setting("general", "msn-filter", CIConfigTypeString, NULL);
-    ci_config_add_setting("general", "log-file", CIConfigTypeString, NULL);
+    ci_config_add_setting("general", "output", CIConfigTypeString, (gpointer)"default", TRUE);
+    ci_config_add_setting("general", "msn-filter", CIConfigTypeString, NULL, TRUE);
+    ci_config_add_setting("general", "log-file", CIConfigTypeString, NULL, TRUE);
 #ifdef USELIBNOTIFY
-    ci_config_add_setting("libnotify", "timeout", CIConfigTypeInt, GINT_TO_POINTER(-1));
+    ci_config_add_setting("libnotify", "timeout", CIConfigTypeInt, GINT_TO_POINTER(-1), TRUE);
 #endif
     
-    ci_config_add_setting("client", "host", CIConfigTypeString, (gpointer)"localhost");
-    ci_config_add_setting("client", "port", CIConfigTypeUint, GUINT_TO_POINTER(63690));
-    ci_config_add_setting("client", "retry-interval", CIConfigTypeInt, GINT_TO_POINTER(10));
-    ci_config_add_setting("client", "user", CIConfigTypeInt, GINT_TO_POINTER(0));
+    ci_config_add_setting("client", "host", CIConfigTypeString, (gpointer)"localhost", TRUE);
+    ci_config_add_setting("client", "port", CIConfigTypeUint, GUINT_TO_POINTER(63690), TRUE);
+    ci_config_add_setting("client", "retry-interval", CIConfigTypeInt, GINT_TO_POINTER(10), TRUE);
+    ci_config_add_setting("client", "user", CIConfigTypeInt, GINT_TO_POINTER(0), TRUE);
 
-    ci_config_add_setting("window", "x", CIConfigTypeInt, GINT_TO_POINTER(10));
-    ci_config_add_setting("window", "y", CIConfigTypeInt, GINT_TO_POINTER(60));
-    ci_config_add_setting("window", "width", CIConfigTypeInt, GINT_TO_POINTER(200));
-    ci_config_add_setting("window", "height", CIConfigTypeInt, GINT_TO_POINTER(100));
-    ci_config_add_setting("window", "set-urgency-hint", CIConfigTypeBoolean, GINT_TO_POINTER(FALSE));
+    ci_config_add_setting("window", "x", CIConfigTypeInt, GINT_TO_POINTER(10), FALSE);
+    ci_config_add_setting("window", "y", CIConfigTypeInt, GINT_TO_POINTER(60), FALSE);
+    ci_config_add_setting("window", "width", CIConfigTypeInt, GINT_TO_POINTER(200), FALSE);
+    ci_config_add_setting("window", "height", CIConfigTypeInt, GINT_TO_POINTER(100), FALSE);
+    ci_config_add_setting("window", "set-urgency-hint", CIConfigTypeBoolean, GINT_TO_POINTER(FALSE), TRUE);
 
     GdkRGBA col = { 1.0, 1.0, 1.0, 1.0 };
-    ci_config_add_setting("window", "background", CIConfigTypeColor, (gpointer)&col);
+    ci_config_add_setting("window", "background", CIConfigTypeColor, (gpointer)&col, TRUE);
 }
 
 int main(int argc, char **argv)

@@ -441,41 +441,6 @@ gboolean ci_window_edit_element_dialog(gchar **format)
     return (result == GTK_RESPONSE_APPLY);
 }
 
-gboolean ci_window_choose_color_dialog(GdkRGBA *color)
-{
-#if GTK_CHECK_VERSION(3,2,0)
-    GtkWidget *dialog = gtk_color_chooser_dialog_new(NULL, GTK_WINDOW(window));
-#else
-    GtkWidget *dialog = gtk_color_selection_dialog_new(NULL);
-    gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(window));
-#endif
-
-    GtkResponseType result = gtk_dialog_run(GTK_DIALOG(dialog));
-
-    if (result == GTK_RESPONSE_OK) {
-        if (color) {
-#if GTK_CHECK_VERSION(3,2,0)
-            gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(dialog), color);
-#else
-            GtkWidget *cch = gtk_color_selection_dialog_get_color_selection(GTK_COLOR_SELECTION_DIALOG(dialog));
-            GdkColor col;
-            guint alpha;
-            gtk_color_selection_get_current_color(GTK_COLOR_SELECTION(cch), &col);
-            alpha = gtk_color_selection_get_current_alpha(GTK_COLOR_SELECTION(cch));
-
-            color->red = col.red/65535.0f;
-            color->green = col.green/65535.0f;
-            color->blue = col.blue/65535.0f;
-            color->alpha = alpha/65535.0f;
-#endif
-        }
-    }
-
-    gtk_widget_destroy(dialog);
-
-    return (result == GTK_RESPONSE_OK);
-}
-
 GtkWidget *ci_window_get_window(void)
 {
     return window;

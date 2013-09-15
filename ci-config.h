@@ -15,14 +15,20 @@ typedef enum {
 typedef struct CIConfigVariable CIConfigSetting;
 
 void ci_config_add_setting(const gchar *group, const gchar *key,
-                           CIConfigType type, gpointer default_value);
+                           CIConfigType type, gpointer default_value, gboolean do_export);
 void ci_config_cleanup(void);
 GList *ci_config_enum_settings(void); /* [element-type: gchar*, "group:key" */
 CIConfigSetting *ci_config_get_setting(const gchar *key);
 CIConfigType ci_config_setting_get_type(CIConfigSetting *setting);
 
+gchar *ci_config_setting_to_string(CIConfigType type, gpointer value);
+gboolean ci_config_setting_from_string(CIConfigType type, gpointer *value, gchar *strval);
+
+gboolean ci_config_setting_set_value(CIConfigSetting *setting, gpointer value);
 gboolean ci_config_setting_get_value(CIConfigSetting *setting, gpointer value);
 gboolean ci_conifg_setting_get_default_value(CIConfigSetting *setting, gpointer value);
+gchar *ci_config_setting_get_value_as_string(CIConfigSetting *setting);
+gchar *ci_config_setting_get_default_value_as_string(CIConfigSetting *setting);
 
 gboolean ci_config_load(void);
 gboolean ci_config_save(void);
