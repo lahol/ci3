@@ -206,13 +206,11 @@ void client_connected_func(GSocketClient *source, GAsyncResult *result, gpointer
 
     gchar *buffer = NULL;
     gsize len = 0;
-    CINetMsg *msg = cinet_message_new(CI_NET_MSG_VERSION, 
-            "major", 3, "minor", 0, "patch", 0, NULL, NULL);
-    if (cinet_msg_write_msg(&buffer, &len, msg) == 0) {
+    if (cinet_message_new_for_data(&buffer, &len, CI_NET_MSG_VERSION, 
+            "major", 3, "minor", 0, "patch", 0, NULL, NULL) == 0) {
         client_send_message(ciclient.connection, buffer, len);
         g_free(buffer);
     }
-    cinet_msg_free(msg);
 
     g_object_unref(ciclient.cancel);
     ciclient.cancel = NULL;
@@ -269,16 +267,15 @@ void client_stop(void)
         if (ciclient.cancel) {
             g_cancellable_cancel(ciclient.cancel);
             g_object_unref(ciclient.cancel);
+            ciclient.cancel = NULL;
         }
     }
     else if (ciclient.state == CIClientStateConnected) {
         DLOG("disconnect\n");
-        CINetMsg *msg = cinet_message_new(CI_NET_MSG_LEAVE, NULL, NULL);
-        if (cinet_msg_write_msg(&buffer, &len, msg) == 0) {
+        if (cinet_message_new_for_data(&buffer, &len, CI_NET_MSG_LEAVE, NULL, NULL) == 0) {
             client_send_message(ciclient.connection, buffer, len);
             g_free(buffer);
         }
-        cinet_msg_free(msg);
 
         DLOG("shutdown socket\n");
         if (ciclient.stream_source_id) {
