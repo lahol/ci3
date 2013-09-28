@@ -444,10 +444,41 @@ void handle_list_reload(gint offset, gint count)
             NULL, NULL);
 }
 
+void update_last_call_callback(CINetMsg *msg, gpointer userdata)
+{
+    DLOG("update_last_call_callback\n");
+    if (msg->msgtype == CI_NET_MSG_DB_CALL_LIST) {
+        if (((CINetMsgDbCallList*)msg)->calls == NULL)
+            return;
+        cinet_call_info_copy(&last_call,
+                ((CICallInfo*)(((CINetMsgDbCallList*)msg)->calls->data)));
+        last_call_valid = TRUE;
+        update_last_call_display();
+        ci_window_update();
+    }
+}
+
+void set_last_call_from_list(void)
+{
+    DLOG("set_last_call_from_list\n");
+    gint user = ci_config_get_int("client:user");
+    client_query(CIClientQueryCallList, update_last_call_callback, NULL,
+            "offset", GINT_TO_POINTER(0),
+            "count", GINT_TO_POINTER(1),
+            "user", GINT_TO_POINTER(user),
+            NULL, NULL);
+}
+
 void handle_client_state_change(CIClientState state)
 {
-    if (state == CIClientStateConnected)
+    DLOG("client state change\n");
+    if (state == CIClientStateConnected) {
         handle_refresh();
+        if (ci_config_get_boolean("general:show-on-connect")) {
+            set_last_call_from_list();
+            ci_window_show(FALSE, FALSE);
+        }
+    }
 }
 
 void handle_about(void)
@@ -460,9 +491,6 @@ void config_changed_cb(void)
     DLOG("config changed\n");
     ci_logging_reinit();
     client_restart(FALSE);
-/*    query_last_call_caller_info();
-    ci_call_list_reload();
-    ci_window_update();*/
 }
 
 void handle_edit_config(void)
@@ -489,6 +517,8 @@ void init_config(void)
     ci_config_add_setting("general", "output", CIConfigTypeString, (gpointer)"default", TRUE);
     ci_config_add_setting("general", "msn-filter", CIConfigTypeString, NULL, TRUE);
     ci_config_add_setting("general", "log-file", CIConfigTypeString, NULL, TRUE);
+    ci_config_add_setting("general", "show-on-connect", CIConfigTypeBoolean, GINT_TO_POINTER(FALSE), TRUE);
+
 #ifdef USELIBNOTIFY
     ci_config_add_setting("libnotify", "timeout", CIConfigTypeInt, GINT_TO_POINTER(-1), TRUE);
 #endif

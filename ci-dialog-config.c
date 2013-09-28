@@ -213,6 +213,7 @@ void ci_dialog_config_show(CIConfigChangedCallback changed_cb)
             if (set->flags & CIDialogConfigFlagChanged)
                 ci_config_setting_set_value(set->setting, set->new_value);
         }
+        ci_config_save();
     }
 
     gtk_widget_destroy(dialog_config);
