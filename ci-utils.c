@@ -121,7 +121,7 @@ gchar *ci_util_clean_number(gchar *number)
         return NULL;
     gsize i = 0, j = 0;
     while (number[i] != 0) {
-        if (g_ascii_isdigit(number[i]) && i > j)
+        if (g_ascii_isdigit(number[i]))
             number[j++] = number[i++];
         else
             ++i;
