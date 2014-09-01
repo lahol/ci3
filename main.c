@@ -474,8 +474,10 @@ void handle_client_state_change(CIClientState state)
     DLOG("client state change\n");
     if (state == CIClientStateConnected) {
         handle_refresh();
-        if (ci_config_get_boolean("general:show-on-connect")) {
+        if (ci_config_get_boolean("general:show-last-call")) {
             set_last_call_from_list();
+        }
+        if (ci_config_get_boolean("general:show-on-connect")) {
             ci_window_show(FALSE, FALSE);
         }
     }
@@ -518,6 +520,7 @@ void init_config(void)
     ci_config_add_setting("general", "msn-filter", CIConfigTypeString, NULL, TRUE);
     ci_config_add_setting("general", "log-file", CIConfigTypeString, NULL, TRUE);
     ci_config_add_setting("general", "show-on-connect", CIConfigTypeBoolean, GINT_TO_POINTER(FALSE), TRUE);
+    ci_config_add_setting("general", "show-last-call", CIConfigTypeBoolean, GINT_TO_POINTER(TRUE), TRUE);
 
 #ifdef USELIBNOTIFY
     ci_config_add_setting("libnotify", "timeout", CIConfigTypeInt, GINT_TO_POINTER(-1), TRUE);
