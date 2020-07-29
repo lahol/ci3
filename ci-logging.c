@@ -8,6 +8,7 @@
 gchar filename[1024];
 gboolean initialized = FALSE;
 
+/* Load the name of the log-file from the configuration. */
 void ci_logging_reinit(void)
 {
     gchar *fname = ci_config_get_string("general:log-file");
@@ -19,6 +20,10 @@ void ci_logging_reinit(void)
     initialized = TRUE;
 }
 
+/* Log to a given file and prepend it with the current time.
+ * If no filename is given ignore the log. On first call this
+ * calls @ci_logging_reinit to get the filename.
+ */
 void ci_log(gchar *format, ...)
 {
     if (!initialized)

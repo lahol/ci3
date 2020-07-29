@@ -543,6 +543,7 @@ void init_config(void)
 
 int main(int argc, char **argv)
 {
+/*    setlocale(LC_ALL, "");*/
     gtk_init(&argc, &argv);
 
     init_config();
